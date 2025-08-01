@@ -5,12 +5,15 @@ const ctx = canvas.getContext('2d');
 const startScreen = document.getElementById('startScreen');
 const endScreen = document.getElementById('endScreen');
 const leaderboardScreen = document.getElementById('leaderboardScreen');
+const congratsScreen = document.getElementById('congratsScreen'); // NEW
 const gameUI = document.getElementById('gameUI');
 
 const startButton = document.getElementById('startButton');
 const leaderboardButton = document.getElementById('leaderboardButton');
 const backButton = document.getElementById('backButton');
 const submitScoreButton = document.getElementById('submitScoreButton');
+const replayButton = document.getElementById('replayButton'); // NEW
+const homeButton = document.getElementById('homeButton');     // NEW
 const nameInput = document.getElementById('nameInput');
 
 const bestTimeEl = document.getElementById('bestTime');
@@ -46,15 +49,16 @@ const PLAYER_SPRINT_COOLDOWN = 1000; // ms
 
 // Level Data
 const TILE_SIZE = 40;
+// CHANGED: The final platform is now 2 tiles lower to make it easier to reach.
 const LEVEL_MAP = [
+    "                                                            ",
+    "                                                            ",
     "                                                            ",
     "                                                            ",
     "                                                            ",
     "                                                            ",
     "                                                         E  ",
     "                                                      PPPPPP",
-    "                                                            ",
-    "                                                            ",
     "                                    P                         ",
     "                                   P P                        ",
     "                        PP        P   P                       ",
@@ -81,7 +85,7 @@ let player, platforms, hazards, goal;
 let camera = { x: 0, y: 0 };
 let startTime, finalTime;
 let animationFrameId;
-let gameState = 'START'; // START, PLAYING, END
+let gameState = 'START'; // START, PLAYING, END, CONGRATS
 
 // Helper function for AABB collision detection
 function isColliding(rect1, rect2) {
@@ -95,7 +99,7 @@ class Player {
     constructor(x, y) {
         this.width = TILE_SIZE - 8;
         this.height = TILE_SIZE * 1.5;
-        this.pos = { x, y }; // Note: pos.y is the TOP of the player
+        this.pos = { x, y };
         this.vel = { x: 0, y: 0 };
         this.jumpsLeft = 2;
         this.onGround = false;
@@ -188,24 +192,17 @@ class Player {
         this.pos.x = playerRect.x;
     }
 
-    draw(ctx) { // CHANGED: camera parameter removed
+    draw(ctx) {
         ctx.fillStyle = C_PLAYER;
-        // CHANGED: Draw at the object's direct position. The camera offset is handled by ctx.translate.
         ctx.fillRect(this.pos.x, this.pos.y, this.width, this.height);
     }
 }
 
 class Platform {
-    constructor(x, y) {
-        this.x = x;
-        this.y = y;
-        this.width = TILE_SIZE;
-        this.height = TILE_SIZE;
-    }
-    draw(ctx) { // CHANGED: camera parameter removed
+    constructor(x, y) { this.x = x; this.y = y; this.width = TILE_SIZE; this.height = TILE_SIZE; }
+    draw(ctx) {
         const grassHeight = 8;
         ctx.fillStyle = C_PLATFORM_GRASS;
-        // CHANGED: Draw at the object's direct position.
         ctx.fillRect(this.x, this.y, this.width, grassHeight);
         ctx.fillStyle = C_PLATFORM_DIRT;
         ctx.fillRect(this.x, this.y + grassHeight, this.width, this.height - grassHeight);
@@ -213,54 +210,30 @@ class Platform {
 }
 
 class Hazard {
-    constructor(x,y) {
-        this.x = x;
-        this.y = y + TILE_SIZE / 2;
-        this.width = TILE_SIZE;
-        this.height = TILE_SIZE / 2;
-    }
-    draw(ctx) { // CHANGED: camera parameter removed
-        ctx.fillStyle = C_HAZARD;
-        // CHANGED: Draw at the object's direct position.
-        ctx.fillRect(this.x, this.y, this.width, this.height);
-    }
+    constructor(x,y) { this.x = x; this.y = y + TILE_SIZE / 2; this.width = TILE_SIZE; this.height = TILE_SIZE / 2; }
+    draw(ctx) { ctx.fillStyle = C_HAZARD; ctx.fillRect(this.x, this.y, this.width, this.height); }
 }
 
 class Goal {
-     constructor(x,y) {
-        this.x = x;
-        this.y = y;
-        this.width = TILE_SIZE;
-        this.height = TILE_SIZE;
-    }
-    draw(ctx) { // CHANGED: camera parameter removed
-        ctx.fillStyle = C_GOAL;
-        // CHANGED: Draw at the object's direct position.
-        ctx.fillRect(this.x, this.y, this.width, this.height);
-    }
+    constructor(x,y) { this.x = x; this.y = y; this.width = TILE_SIZE; this.height = TILE_SIZE; }
+    draw(ctx) { ctx.fillStyle = C_GOAL; ctx.fillRect(this.x, this.y, this.width, this.height); }
 }
 
 // --- Game Logic ---
 let gameStartPos = { x: 0, y: 0 };
 
 function initLevel() {
-    platforms = [];
-    hazards = [];
+    platforms = []; hazards = [];
     let foundStart = false;
-    
     LEVEL_MAP.forEach((row, rowIndex) => {
         for (let colIndex = 0; colIndex < row.length; colIndex++) {
             const tile = row[colIndex];
             const x = colIndex * TILE_SIZE;
             const y = rowIndex * TILE_SIZE;
-
             if (tile === 'P') {
                 platforms.push(new Platform(x, y));
                 if (LEVEL_MAP[rowIndex-1] && LEVEL_MAP[rowIndex-1][colIndex] === 'S' && !foundStart) {
-                     gameStartPos = {
-                         x: x + (TILE_SIZE / 2) - ((TILE_SIZE-8)/2),
-                         y: y - (TILE_SIZE * 1.5)
-                     };
+                     gameStartPos = { x: x + (TILE_SIZE / 2) - ((TILE_SIZE-8)/2), y: y - (TILE_SIZE * 1.5) };
                      foundStart = true;
                 }
             }
@@ -268,13 +241,11 @@ function initLevel() {
             else if (tile === 'E') goal = new Goal(x, y);
         }
     });
-    
     player = new Player(gameStartPos.x, gameStartPos.y);
 }
 
 function checkOtherCollisions() {
     const playerRect = { x: player.pos.x, y: player.pos.y, width: player.width, height: player.height };
-
     for(const h of hazards) { if (isColliding(playerRect, h)) { player.respawn(gameStartPos); return; } }
     if (goal && isColliding(playerRect, goal)) { endGame(); return; }
     if (player.pos.y > LEVEL_HEIGHT + 200) { player.respawn(gameStartPos); }
@@ -283,53 +254,35 @@ function checkOtherCollisions() {
 function update() {
     player.update(platforms);
     checkOtherCollisions();
-
-    // Update Camera
     const targetCamX = player.pos.x + player.width / 2 - WIDTH / 2;
     const targetCamY = player.pos.y + player.height / 2 - HEIGHT / 2;
     camera.x += (targetCamX - camera.x) * 0.08;
     camera.y += (targetCamY - camera.y) * 0.08;
-
-    // Clamp camera
     if (camera.x < 0) camera.x = 0;
     if (camera.x > LEVEL_WIDTH - WIDTH) camera.x = LEVEL_WIDTH - WIDTH;
     if (camera.y < 0) camera.y = 0;
     if (camera.y > LEVEL_HEIGHT - HEIGHT) camera.y = LEVEL_HEIGHT - HEIGHT;
-    
-    // Update UI
     const elapsedTime = (performance.now() - startTime) / 1000;
     timerEl.textContent = `Time: ${elapsedTime.toFixed(2)}`;
-
-    if (player.isSprinting) {
-        sprintStatusEl.textContent = 'SPRINT!';
-        sprintStatusEl.style.color = C_PLAYER;
-    } else if (performance.now() < player.sprintCooldownTimer) {
-        sprintStatusEl.textContent = 'Cooldown';
-        sprintStatusEl.style.color = 'black';
-    } else {
-        sprintStatusEl.textContent = 'Sprint Ready';
-        sprintStatusEl.style.color = 'green';
-    }
+    if (player.isSprinting) { sprintStatusEl.textContent = 'SPRINT!'; sprintStatusEl.style.color = C_PLAYER;
+    } else if (performance.now() < player.sprintCooldownTimer) { sprintStatusEl.textContent = 'Cooldown'; sprintStatusEl.style.color = 'black';
+    } else { sprintStatusEl.textContent = 'Sprint Ready'; sprintStatusEl.style.color = 'green'; }
 }
 
 function draw() {
     ctx.clearRect(0, 0, WIDTH, HEIGHT);
     ctx.save();
-    // This one translate command handles ALL camera movement for every object.
     ctx.translate(-camera.x, -camera.y);
-
     platforms.forEach(p => p.draw(ctx));
     hazards.forEach(h => h.draw(ctx));
     if (goal) goal.draw(ctx);
     player.draw(ctx);
-
     ctx.restore();
 }
 
 function gameLoop() {
     if (gameState !== 'PLAYING') return;
-    update();
-    draw();
+    update(); draw();
     animationFrameId = requestAnimationFrame(gameLoop);
 }
 
@@ -339,8 +292,8 @@ function startGame() {
     startScreen.style.display = 'none';
     endScreen.style.display = 'none';
     leaderboardScreen.style.display = 'none';
+    congratsScreen.style.display = 'none'; // NEW: Hide congrats screen
     gameUI.style.display = 'flex';
-    
     initLevel();
     startTime = performance.now();
     gameLoop();
@@ -357,11 +310,22 @@ function endGame() {
     nameInput.focus();
 }
 
+// NEW: Function to show the congrats screen
+function showCongratsScreen() {
+    gameState = 'CONGRATS';
+    startScreen.style.display = 'none';
+    endScreen.style.display = 'none';
+    leaderboardScreen.style.display = 'none';
+    gameUI.style.display = 'none';
+    congratsScreen.style.display = 'flex';
+}
+
 function showStartScreen() {
     gameState = 'START';
     startScreen.style.display = 'flex';
     endScreen.style.display = 'none';
     leaderboardScreen.style.display = 'none';
+    congratsScreen.style.display = 'none'; // NEW: Hide congrats screen
     gameUI.style.display = 'none';
     const leaderboard = loadLeaderboard();
     bestTimeEl.textContent = (leaderboard.length > 0)
@@ -374,7 +338,6 @@ function showLeaderboard() {
     leaderboardScreen.style.display = 'flex';
     const leaderboard = loadLeaderboard();
     leaderboardListEl.innerHTML = '';
-    
     if (leaderboard.length === 0) {
         leaderboardListEl.innerHTML = '<div>No scores yet!</div>';
     } else {
@@ -404,9 +367,7 @@ function saveLeaderboard(name, score) {
 window.addEventListener('keydown', (e) => {
     keys[e.key] = true;
     if (gameState === 'PLAYING') {
-        if (e.key === ' ' || e.key === 'w' || e.key === 'ArrowUp') {
-            e.preventDefault(); player.jump();
-        }
+        if (e.key === ' ' || e.key === 'w' || e.key === 'ArrowUp') { e.preventDefault(); player.jump(); }
         if (e.key === 'Shift') player.sprint();
         if (e.key === 'r' || e.key === 'R') startGame();
     }
@@ -417,11 +378,17 @@ window.addEventListener('keyup', (e) => { keys[e.key] = false; });
 startButton.addEventListener('click', startGame);
 leaderboardButton.addEventListener('click', showLeaderboard);
 backButton.addEventListener('click', showStartScreen);
+
+// CHANGED: The submit button now takes you to the congrats screen.
 submitScoreButton.addEventListener('click', () => {
     saveLeaderboard(nameInput.value, finalTime);
     nameInput.value = '';
-    showStartScreen();
+    showCongratsScreen(); // Go to congrats screen instead of home.
 });
+
+// NEW: Event listeners for the new buttons.
+replayButton.addEventListener('click', startGame);
+homeButton.addEventListener('click', showStartScreen);
 
 // --- Initial Call ---
 showStartScreen();
