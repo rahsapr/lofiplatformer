@@ -64,7 +64,7 @@ const LEVEL_MAP = [
     "           P                                                  ",
     "          P P                                                 ",
     "  S      P   P        P H P                                   ",
-    " PPPPP   PPPPP       PPPPPPP            PPPP                  ",
+    " PPPPP   PPPPPP       PPPPPPP            PPPP                  ", // Added one more 'P' here to make start platform more solid
     " P   P                                HHH                     ",
     " P   P   PPPP                                                 ",
     "PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP",
@@ -87,7 +87,7 @@ class Player {
         this.width = TILE_SIZE - 8;
         this.height = TILE_SIZE * 1.5;
         // Physics vectors (using simple objects)
-        this.pos = { x: x, y: y };
+        this.pos = { x: x, y: y }; // this.pos.y represents the bottom of the player's rectangle
         this.vel = { x: 0, y: 0 };
         this.acc = { x: 0, y: 0 };
         // State
@@ -135,17 +135,21 @@ class Player {
         }
 
         if (!this.isSprinting) {
-            this.acc.x += this.vel.x * PLAYER_FRICTION;
+             this.acc.x += this.vel.x * PLAYER_FRICTION;
         }
 
+        // Apply acceleration to velocity
         this.vel.x += this.acc.x;
         this.vel.y += this.acc.y;
+
+        // Apply velocity to position
         this.pos.x += this.vel.x;
-        this.pos.y += this.vel.y + 0.5 * this.acc.y;
+        this.pos.y += this.vel.y; // <--- CHANGED: Removed the 0.5 * this.acc.y part
     }
 
     draw(ctx, camera) {
         ctx.fillStyle = C_PLAYER;
+        // Draw using pos.x as center, pos.y as bottom
         ctx.fillRect(this.pos.x - this.width / 2 - camera.x, this.pos.y - this.height - camera.y, this.width, this.height);
     }
 }
@@ -153,7 +157,7 @@ class Player {
 class Platform {
     constructor(x, y, w, h, type = 'platform') {
         this.x = x;
-        this.y = y;
+        this.y = y; // y represents the top of the platform
         this.width = w;
         this.height = h;
         this.type = type;
@@ -181,11 +185,12 @@ class Platform {
 
 
 // --- Game Logic ---
+let gameStartPos = { x: 0, y: 0 }; // Global variable to store the actual start position for respawns
+
 function initLevel() {
     platforms = [];
     hazards = [];
-    let startPos = { x: 0, y: 0 };
-
+    
     LEVEL_MAP.forEach((row, rowIndex) => {
         for (let colIndex = 0; colIndex < row.length; colIndex++) {
             const tile = row[colIndex];
@@ -195,25 +200,32 @@ function initLevel() {
             if (tile === 'P') platforms.push(new Platform(x, y, TILE_SIZE, TILE_SIZE));
             else if (tile === 'H') hazards.push(new Platform(x, y + TILE_SIZE / 2, TILE_SIZE, TILE_SIZE / 2, 'hazard'));
             else if (tile === 'E') goal = new Platform(x, y, TILE_SIZE, TILE_SIZE, 'goal');
-            else if (tile === 'S') startPos = { x: x + TILE_SIZE / 2, y: y + TILE_SIZE - 1 };
+            else if (tile === 'S') {
+                // Player's pos.y is its bottom. So, to place player on top of platform:
+                // Platform top (y) + TILE_SIZE (platform height) - 1 (1 pixel above platform top)
+                gameStartPos = { x: x + TILE_SIZE / 2, y: y + TILE_SIZE - 1 }; 
+            }
         }
     });
 
-    player = new Player(startPos.x, startPos.y);
-    return startPos;
+    player = new Player(gameStartPos.x, gameStartPos.y); // Initialize player at parsed start position
 }
 
-const startPos = initLevel(); // Initial parse to find start position for respawns
 
 function checkCollisions() {
-    // Horizontal
-    let playerRect = { x: player.pos.x - player.width / 2, y: player.pos.y - player.height, width: player.width, height: player.height };
+    // Create a rect for player for easier AABB collision checks
+    let playerRect = { 
+        x: player.pos.x - player.width / 2, 
+        y: player.pos.y - player.height, 
+        width: player.width, 
+        height: player.height 
+    };
 
+    // Horizontal collision
     platforms.forEach(p => {
         if (playerRect.x < p.x + p.width && playerRect.x + playerRect.width > p.x &&
             playerRect.y < p.y + p.height && playerRect.y + playerRect.height > p.y) {
             
-            // Resolve horizontal collision
             if (player.vel.x > 0) { // Moving right
                 player.pos.x = p.x - player.width / 2;
             } else if (player.vel.x < 0) { // Moving left
@@ -223,21 +235,28 @@ function checkCollisions() {
         }
     });
 
-    // Vertical
-    playerRect = { x: player.pos.x - player.width / 2, y: player.pos.y - player.height, width: player.width, height: player.height };
+    // Re-calculate playerRect after horizontal resolution to ensure accurate vertical checks
+    playerRect = { 
+        x: player.pos.x - player.width / 2, 
+        y: player.pos.y - player.height, 
+        width: player.width, 
+        height: player.height 
+    };
 
-    let onGround = false;
+    // Vertical collision
     platforms.forEach(p => {
         if (playerRect.x < p.x + p.width && playerRect.x + playerRect.width > p.x &&
             playerRect.y < p.y + p.height && playerRect.y + playerRect.height > p.y) {
             
-            if (player.vel.y > 0 && playerRect.y + playerRect.height - player.vel.y <= p.y) { // Landing on top
-                player.pos.y = p.y;
+            // Landing on top: player moving down (vel.y > 0) AND the player's current bottom 
+            // is less than where the platform's top would be if player had moved past it + a buffer.
+            // This prevents falling through if a large velocity causes overshooting.
+            if (player.vel.y > 0 && player.pos.y < p.y + player.vel.y + 1) { // <--- CHANGED: More robust landing condition
+                player.pos.y = p.y; // Set player's bottom to platform's top
                 player.vel.y = 0;
                 player.land();
-                onGround = true;
-            } else if (player.vel.y < 0) { // Hitting from below
-                player.pos.y = p.y + p.height + player.height;
+            } else if (player.vel.y < 0) { // Hitting from below (ceiling)
+                player.pos.y = p.y + p.height + player.height; // Set player's bottom to bottom of platform + player height (i.e. top to bottom of platform)
                 player.vel.y = 0;
             }
         }
@@ -246,20 +265,20 @@ function checkCollisions() {
     // Hazard collision
     hazards.forEach(h => {
         if (playerRect.x < h.x + h.width && playerRect.x + playerRect.width > h.x &&
-            playerRect.y < h.y + h.height && playerRect.y + playerRect.height > h.y) {
-            player.respawn(startPos);
+            playerRect.y < h.y + h.height && playerRect.y + h.height > h.y) { // Check collision with hazard
+            player.respawn(gameStartPos); // Use the global gameStartPos
         }
     });
 
     // Goal collision
-    if (goal && playerRect.x < goal.x + goal.width && playerRect.x + goal.width > goal.x &&
-        playerRect.y < goal.y + goal.height && playerRect.y + goal.height > goal.y) {
+    if (goal && playerRect.x < goal.x + goal.width && playerRect.x + playerRect.width > goal.x &&
+        playerRect.y < goal.y + goal.height && playerRect.y + playerRect.height > goal.y) {
         endGame();
     }
     
     // Fall off map
-    if (player.pos.y > LEVEL_HEIGHT + 200) {
-        player.respawn(startPos);
+    if (player.pos.y > LEVEL_HEIGHT + 200) { // Check player's bottom against slightly below level bottom
+        player.respawn(gameStartPos);
     }
 }
 
@@ -299,6 +318,7 @@ function update() {
 function draw() {
     ctx.clearRect(0, 0, WIDTH, HEIGHT); // Clear canvas
 
+    // The camera effectively translates the world, so we draw everything offset by camera.x/y
     ctx.save();
     ctx.translate(-camera.x, -camera.y);
 
@@ -326,8 +346,8 @@ function startGame() {
     leaderboardScreen.style.display = 'none';
     gameUI.style.display = 'flex';
     
-    initLevel();
-    player.respawn(startPos);
+    initLevel(); // Re-initialize level elements and player for a fresh start
+    player.respawn(gameStartPos); // Ensure player is at the determined start position
     
     startTime = performance.now();
     gameLoop();
@@ -343,7 +363,7 @@ function endGame() {
     gameUI.style.display = 'none';
     endScreen.style.display = 'flex';
     finalTimeEl.textContent = `Your Time: ${finalTime.toFixed(2)}s`;
-    nameInput.focus();
+    nameInput.focus(); // Auto-focus the input field
 }
 
 function showStartScreen() {
@@ -402,7 +422,7 @@ window.addEventListener('keydown', (e) => {
             player.jump();
         }
         if (e.key === 'Shift') player.sprint();
-        if (e.key === 'r') startGame(); // Restart
+        if (e.key === 'r' || e.key === 'R') startGame(); // Restart
     }
     
     if (gameState === 'END' && e.key === 'Enter') {
@@ -424,4 +444,5 @@ submitScoreButton.addEventListener('click', () => {
 });
 
 // --- Initial Call ---
+initLevel(); // Call once initially to parse start position
 showStartScreen();
