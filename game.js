@@ -36,10 +36,11 @@ const C_GOAL = '#ffd700'; // Gold
 
 // Player Physics
 const PLAYER_ACC = 0.6;
+const PLAYER_SPRINT_ACC = 1.2;
 const PLAYER_FRICTION = -0.12;
 const PLAYER_GRAVITY = 0.8;
 const PLAYER_JUMP_STRENGTH = -18;
-const PLAYER_SPRINT_SPEED = 8;
+const PLAYER_SPRINT_JUMP_STRENGTH = -22;
 const PLAYER_SPRINT_DURATION = 250; // ms
 const PLAYER_SPRINT_COOLDOWN = 1000; // ms
 
@@ -94,7 +95,7 @@ class Player {
     constructor(x, y) {
         this.width = TILE_SIZE - 8;
         this.height = TILE_SIZE * 1.5;
-        this.pos = { x, y }; // Note: pos.y is now the TOP of the player
+        this.pos = { x, y }; // Note: pos.y is the TOP of the player
         this.vel = { x: 0, y: 0 };
         this.jumpsLeft = 2;
         this.onGround = false;
@@ -106,14 +107,18 @@ class Player {
 
     jump() {
         if (this.jumpsLeft > 0) {
-            this.vel.y = PLAYER_JUMP_STRENGTH;
+            if (this.onGround && this.isSprinting) {
+                this.vel.y = PLAYER_SPRINT_JUMP_STRENGTH;
+            } else {
+                this.vel.y = PLAYER_JUMP_STRENGTH;
+            }
             this.jumpsLeft--;
             this.onGround = false;
         }
     }
 
     sprint() {
-        if (performance.now() > this.sprintCooldownTimer) {
+        if (this.onGround && performance.now() > this.sprintCooldownTimer) {
             this.isSprinting = true;
             this.sprintTimer = performance.now();
         }
@@ -124,74 +129,69 @@ class Player {
         this.pos.y = startPos.y;
         this.vel = { x: 0, y: 0 };
         this.onGround = false;
+        this.isSprinting = false;
     }
 
     update(platforms) {
-        // --- 1. Calculate Acceleration & Sprinting ---
         let accX = 0;
-        const moveSpeed = this.isSprinting ? PLAYER_SPRINT_SPEED : PLAYER_ACC;
-
-        if (keys['a'] || keys['ArrowLeft']) accX = -moveSpeed;
-        if (keys['d'] || keys['ArrowRight']) accX = moveSpeed;
-
+        const moveForce = (this.isSprinting && this.onGround) ? PLAYER_SPRINT_ACC : PLAYER_ACC;
+        if (keys['a'] || keys['ArrowLeft']) accX = -moveForce;
+        if (keys['d'] || keys['ArrowRight']) accX = moveForce;
         if (this.isSprinting && performance.now() - this.sprintTimer > PLAYER_SPRINT_DURATION) {
             this.isSprinting = false;
             this.sprintCooldownTimer = performance.now() + PLAYER_SPRINT_COOLDOWN;
         }
 
-        // --- 2. Compute Velocity (Physics) ---
-        if (!this.isSprinting) {
+        if (accX === 0) {
             accX += this.vel.x * PLAYER_FRICTION;
         }
         this.vel.x += accX;
         this.vel.y += PLAYER_GRAVITY;
         
-        // Limit max fall speed to prevent extreme tunneling
-        if (this.vel.y > TILE_SIZE) {
-            this.vel.y = TILE_SIZE;
+        if (this.vel.y > TILE_SIZE) this.vel.y = TILE_SIZE;
+        const maxSpeed = (this.isSprinting && this.onGround) ? 12 : 7;
+        if (Math.abs(this.vel.x) > maxSpeed) {
+            this.vel.x = Math.sign(this.vel.x) * maxSpeed;
         }
 
-        // --- 3. Handle Collisions (The Robust Way) ---
-        // Create a representation of the player for collision checks
         const playerRect = { x: this.pos.x, y: this.pos.y, width: this.width, height: this.height };
 
-        // ** Y-AXIS COLLISION **
         playerRect.y += this.vel.y;
-        this.onGround = false; // Assume not on ground until a collision proves otherwise
+        this.onGround = false;
 
         for (const p of platforms) {
             if (isColliding(playerRect, p)) {
-                if (this.vel.y > 0) { // Moving Down (Landing)
-                    playerRect.y = p.y - this.height; // Snap top of player to just above platform
+                if (this.vel.y > 0) {
+                    playerRect.y = p.y - this.height;
                     this.vel.y = 0;
                     this.onGround = true;
-                    this.jumpsLeft = 2; // Reset jumps on landing
-                } else if (this.vel.y < 0) { // Moving Up (Hitting Ceiling)
-                    playerRect.y = p.y + p.height; // Snap top of player to just below platform
+                    this.jumpsLeft = 2;
+                } else if (this.vel.y < 0) {
+                    playerRect.y = p.y + p.height;
                     this.vel.y = 0;
                 }
             }
         }
-        this.pos.y = playerRect.y; // Commit the final Y position
+        this.pos.y = playerRect.y;
 
-        // ** X-AXIS COLLISION **
         playerRect.x += this.vel.x;
         for (const p of platforms) {
             if (isColliding(playerRect, p)) {
-                if (this.vel.x > 0) { // Moving Right
+                if (this.vel.x > 0) {
                     playerRect.x = p.x - this.width;
-                } else if (this.vel.x < 0) { // Moving Left
+                } else if (this.vel.x < 0) {
                     playerRect.x = p.x + p.width;
                 }
-                this.vel.x = 0; // Stop horizontal movement on wall collision
+                this.vel.x = 0;
             }
         }
-        this.pos.x = playerRect.x; // Commit the final X position
+        this.pos.x = playerRect.x;
     }
 
-    draw(ctx, camera) {
+    draw(ctx) { // CHANGED: camera parameter removed
         ctx.fillStyle = C_PLAYER;
-        ctx.fillRect(this.pos.x - camera.x, this.pos.y - camera.y, this.width, this.height);
+        // CHANGED: Draw at the object's direct position. The camera offset is handled by ctx.translate.
+        ctx.fillRect(this.pos.x, this.pos.y, this.width, this.height);
     }
 }
 
@@ -202,14 +202,13 @@ class Platform {
         this.width = TILE_SIZE;
         this.height = TILE_SIZE;
     }
-    draw(ctx, camera) {
-        const drawX = this.x - camera.x;
-        const drawY = this.y - camera.y;
+    draw(ctx) { // CHANGED: camera parameter removed
         const grassHeight = 8;
         ctx.fillStyle = C_PLATFORM_GRASS;
-        ctx.fillRect(drawX, drawY, this.width, grassHeight);
+        // CHANGED: Draw at the object's direct position.
+        ctx.fillRect(this.x, this.y, this.width, grassHeight);
         ctx.fillStyle = C_PLATFORM_DIRT;
-        ctx.fillRect(drawX, drawY + grassHeight, this.width, this.height - grassHeight);
+        ctx.fillRect(this.x, this.y + grassHeight, this.width, this.height - grassHeight);
     }
 }
 
@@ -220,9 +219,10 @@ class Hazard {
         this.width = TILE_SIZE;
         this.height = TILE_SIZE / 2;
     }
-    draw(ctx, camera) {
+    draw(ctx) { // CHANGED: camera parameter removed
         ctx.fillStyle = C_HAZARD;
-        ctx.fillRect(this.x - camera.x, this.y - camera.y, this.width, this.height);
+        // CHANGED: Draw at the object's direct position.
+        ctx.fillRect(this.x, this.y, this.width, this.height);
     }
 }
 
@@ -233,9 +233,10 @@ class Goal {
         this.width = TILE_SIZE;
         this.height = TILE_SIZE;
     }
-    draw(ctx, camera) {
+    draw(ctx) { // CHANGED: camera parameter removed
         ctx.fillStyle = C_GOAL;
-        ctx.fillRect(this.x - camera.x, this.y - camera.y, this.width, this.height);
+        // CHANGED: Draw at the object's direct position.
+        ctx.fillRect(this.x, this.y, this.width, this.height);
     }
 }
 
@@ -255,11 +256,10 @@ function initLevel() {
 
             if (tile === 'P') {
                 platforms.push(new Platform(x, y));
-                // ** GUARANTEED START **: Find the first platform in the 'S' row and set it as the start.
-                if (LEVEL_MAP[rowIndex-1][colIndex] === 'S' && !foundStart) {
+                if (LEVEL_MAP[rowIndex-1] && LEVEL_MAP[rowIndex-1][colIndex] === 'S' && !foundStart) {
                      gameStartPos = {
-                         x: x + (TILE_SIZE / 2) - ((TILE_SIZE-8)/2), // Center the player on the tile
-                         y: y - (TILE_SIZE * 1.5) // Place player top so its bottom is on the platform
+                         x: x + (TILE_SIZE / 2) - ((TILE_SIZE-8)/2),
+                         y: y - (TILE_SIZE * 1.5)
                      };
                      foundStart = true;
                 }
@@ -269,7 +269,6 @@ function initLevel() {
         }
     });
     
-    // Create the player AFTER finding the start position.
     player = new Player(gameStartPos.x, gameStartPos.y);
 }
 
@@ -316,12 +315,13 @@ function update() {
 function draw() {
     ctx.clearRect(0, 0, WIDTH, HEIGHT);
     ctx.save();
+    // This one translate command handles ALL camera movement for every object.
     ctx.translate(-camera.x, -camera.y);
 
-    platforms.forEach(p => p.draw(ctx, camera));
-    hazards.forEach(h => h.draw(ctx, camera));
-    if (goal) goal.draw(ctx, camera);
-    player.draw(ctx, camera);
+    platforms.forEach(p => p.draw(ctx));
+    hazards.forEach(h => h.draw(ctx));
+    if (goal) goal.draw(ctx);
+    player.draw(ctx);
 
     ctx.restore();
 }
