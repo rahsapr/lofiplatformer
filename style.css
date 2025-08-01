@@ -78,6 +78,12 @@ canvas {
     margin-top: 10px;
 }
 
+/* NEW: Style for horizontal button layout */
+.button-row {
+    display: flex;
+    gap: 20px; /* Adds space between buttons */
+}
+
 #leaderboardList {
     font-size: 1.5rem;
 }
