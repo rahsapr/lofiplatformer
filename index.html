@@ -2,11 +2,45 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Lofi Platformer Spirit Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flowy Jumper</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <canvas id="gameCanvas" width="800" height="400"></canvas>
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- UI Screens -->
+    <div id="startScreen" class="screen">
+        <h1>Flowy Jumper</h1>
+        <h2 id="bestTime">Best Time: ---</h2>
+        <p>Controls: A/D or Arrows to Move</p>
+        <p>SPACE to Jump, L-SHIFT to Sprint</p>
+        <button id="startButton">Start Game</button>
+        <button id="leaderboardButton">View Leaderboard</button>
+        <p class="small">Press 'R' to restart at any time.</p>
+    </div>
+
+    <div id="endScreen" class="screen" style="display: none;">
+        <h1>Level Complete!</h1>
+        <h2 id="finalTime"></h2>
+        <p>Enter Your Name (max 10 chars):</p>
+        <input type="text" id="nameInput" maxlength="10">
+        <button id="submitScoreButton">Save Score</button>
+        <p class="small">Or press Enter to finish</p>
+    </div>
+
+    <div id="leaderboardScreen" class="screen" style="display: none;">
+        <h1>Leaderboard</h1>
+        <div id="leaderboardList"></div>
+        <button id="backButton">Back</button>
+    </div>
+
+    <!-- UI Overlays (In-Game) -->
+    <div id="gameUI" style="display: none;">
+        <div id="timer">Time: 0.00</div>
+        <div id="sprintStatus">Sprint Ready</div>
+    </div>
+
     <script src="game.js"></script>
 </body>
 </html>
