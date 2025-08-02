@@ -1,8 +1,29 @@
 // --- Setup and DOM Elements ---
 const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d'), startScreen = document.getElementById('startScreen'), intermissionScreen = document.getElementById('intermissionScreen'), gameCompleteScreen = document.getElementById('gameCompleteScreen'), leaderboardScreen = document.getElementById('leaderboardScreen'), deathScreen = document.getElementById('deathScreen'), pauseScreen = document.getElementById('pauseScreen'), powerupScreen = document.getElementById('powerupScreen'), gameUI = document.getElementById('gameUI'), startButton = document.getElementById('startButton'), leaderboardButton = document.getElementById('leaderboardButton'), backButton = document.getElementById('backButton'), submitScoreButton = document.getElementById('submitScoreButton'), replayButton = document.getElementById('replayButton'), homeButton = document.getElementById('homeButton'), nextLevelButton = document.getElementById('nextLevelButton'), restartFromDeathButton = document.getElementById('restartFromDeathButton'), homeFromDeathButton = document.getElementById('homeFromDeathButton'), resumeButton = document.getElementById('resumeButton'), pauseRestartButton = document.getElementById('pauseRestartButton'), pauseHomeButton = document.getElementById('pauseHomeButton'), continueButton = document.getElementById('continueButton'), nameInput = document.getElementById('nameInput'), bestTimeEl = document.getElementById('bestTime'), finalTimeStat = document.getElementById('finalTimeStat'), finalDeathsStat = document.getElementById('finalDeathsStat'), leaderboardListEl = document.getElementById('leaderboardList'), timerEl = document.getElementById('timer'), deathsCounter = document.getElementById('deathsCounter'), sprintStatusEl = document.getElementById('sprintStatus'), levelStartBanner = document.getElementById('levelStartBanner'), levelBannerText = document.getElementById('levelBannerText'), deathOptions = document.getElementById('deathOptions'), pauseLevelStat = document.getElementById('pauseLevelStat'), pauseTimeStat = document.getElementById('pauseTimeStat'), pauseDeathsStat = document.getElementById('pauseDeathsStat'), musicVolumeSlider = document.getElementById('musicVolumeSlider'), sfxVolumeSlider = document.getElementById('sfxVolumeSlider'), masterMuteCheckbox = document.getElementById('masterMuteCheckbox'), powerupNotification = document.getElementById('powerupNotification'), powerupMessage = document.getElementById('powerupMessage');
 
+// =======================================================
+// FIREBASE SETUP
+// =======================================================
+
+// IMPORTANT: PASTE YOUR NEW, REGENERATED FIREBASE CONFIG OBJECT HERE
+  const firebaseConfig = {
+    apiKey: "AIzaSyAva6V5pnwQuMeD8bbC26HDdX-c_Qa4CYM",
+    authDomain: "flowy-jumper-game.firebaseapp.com",
+    projectId: "flowy-jumper-game",
+    storageBucket: "flowy-jumper-game.firebasestorage.app",
+    messagingSenderId: "229284031089",
+    appId: "1:229284031089:web:30df8bfc611976830d09d0",
+    measurementId: "G-8P4NL0RNRY"
+  };
+
+// Initialize Firebase using the global `firebase` object from the compat script
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const leaderboardCollection = db.collection('leaderboard');
+
+
 // --- Audio & Settings ---
-const backgroundMusic = new Audio('assets/background.mp3'); backgroundMusic.loop = true; const gameOverMusic = new Audio('assets/gameover.mp3'); gameOverMusic.loop = false;
+const backgroundMusic = new Audio('assets/background.mp3'); backgroundMusic.loop = true; const gameOverMusic = new Audio('assets-old/gameover.mp3'); gameOverMusic.loop = false;
 let gameSettings = { musicVolume: 0.5, sfxVolume: 0.5, isMuted: false }; let unlockedPowers = { canPush: false, canDash: false };
 function saveSettings() { localStorage.setItem('flowyJumperSettings', JSON.stringify(gameSettings)); } function loadSettings() { const saved = localStorage.getItem('flowyJumperSettings'); if (saved) { gameSettings = JSON.parse(saved); } musicVolumeSlider.value = gameSettings.musicVolume; sfxVolumeSlider.value = gameSettings.sfxVolume; masterMuteCheckbox.checked = gameSettings.isMuted; applyAudioSettings(); } function applyAudioSettings() { backgroundMusic.volume = gameSettings.musicVolume; gameOverMusic.volume = gameSettings.musicVolume; backgroundMusic.muted = gameSettings.isMuted; gameOverMusic.muted = gameSettings.isMuted; } function saveProgress() { localStorage.setItem('flowyJumperProgress', JSON.stringify(unlockedPowers)); } function loadProgress() { const saved = localStorage.getItem('flowyJumperProgress'); if (saved) { unlockedPowers = JSON.parse(saved); } }
 
@@ -32,34 +53,9 @@ let gameStartPos = { x: 0, y: 0 };
 function initLevel(levelIndex) { platforms = []; pushableBlocks = []; hazards = []; let foundStart = false; const levelMap = LEVEL_MAPS[levelIndex]; currentLevelHeight = levelMap.length * TILE_SIZE; currentLevelWidth = levelMap[0].length * TILE_SIZE; levelMap.forEach((row, rowIndex) => { for (let colIndex = 0; colIndex < row.length; colIndex++) { const tile = row[colIndex]; const x = colIndex * TILE_SIZE; const y = rowIndex * TILE_SIZE; if (tile === 'P') { platforms.push(new Platform(x, y)); if (levelMap[rowIndex-1] && levelMap[rowIndex-1][colIndex] === 'S' && !foundStart) { gameStartPos = { x: x + (TILE_SIZE / 2) - ((TILE_SIZE-8)/2), y: y - (TILE_SIZE * 1.5) }; foundStart = true; } } else if (tile === 'B') { pushableBlocks.push(new PushableBlock(x,y)); } else if (tile === 'H') { hazards.push(new Hazard(x, y)); } else if (tile === 'E') { goal = new Goal(x, y); } } }); player = new Player(gameStartPos.x, gameStartPos.y); }
 function triggerDeathSequence() { if (gameState !== 'PLAYING') return; gameState = 'DEATH_SCREEN'; stateChangeTimestamp = performance.now(); totalDeaths++; backgroundMusic.pause(); gameOverMusic.currentTime = 0; gameOverMusic.play().catch(e => console.error("Game over audio failed:", e)); switchScreen(deathScreen); deathOptions.style.visibility = 'hidden'; }
 function checkOtherCollisions() { const playerRect = { x: player.pos.x, y: player.pos.y, width: player.width, height: player.height }; for(const h of hazards) { if (isColliding(playerRect, h)) { triggerDeathSequence(); return; } } if (goal && isColliding(playerRect, goal)) { completeLevel(); return; } if (player.pos.y > currentLevelHeight + 200) { triggerDeathSequence(); } }
-function update() { if (gameState !== 'PLAYING' && gameState !== 'PAUSED') return; if (gameState === 'PAUSED') return; player.update(platforms, pushableBlocks); checkOtherCollisions(); const targetCamX = player.pos.x + player.width / 2 - WIDTH / 2; const targetCamY = player.pos.y + player.height / 2 - HEIGHT / 2; camera.x += (targetCamX - camera.x) * 0.08; camera.y += (targetCamY - camera.y) * 0.08; if (camera.x < 0) camera.x = 0; if (camera.x > currentLevelWidth - WIDTH) camera.x = currentLevelWidth - WIDTH; if (camera.y < 0) camera.y = 0; if (camera.y > currentLevelHeight - HEIGHT) camera.y = currentLevelHeight - HEIGHT; const now = performance.now(); if (now - lastUiUpdateTime > UI_UPDATE_INTERVAL) { lastUiUpdateTime = now; const elapsedTime = (now - levelStartTime) / 1000; timerEl.textContent = `Time: ${elapsedTime.toFixed(2)}`; deathsCounter.textContent = `Deaths: ${totalDeaths}`; if (player.isSprinting) { sprintStatusEl.textContent = 'SPRINT!'; sprintStatusEl.style.color = '#ff7847'; } else if (now < player.sprintCooldownTimer) { sprintStatusEl.textContent = 'Cooldown'; sprintStatusEl.style.color = 'black'; } else { sprintStatusEl.textContent = 'Sprint Ready'; sprintStatusEl.style.color = 'green'; } } }
+function update() { if (gameState === 'PLAYING') { player.update(platforms, pushableBlocks); checkOtherCollisions(); const targetCamX = player.pos.x + player.width / 2 - WIDTH / 2; const targetCamY = player.pos.y + player.height / 2 - HEIGHT / 2; camera.x += (targetCamX - camera.x) * 0.08; camera.y += (targetCamY - camera.y) * 0.08; if (camera.x < 0) camera.x = 0; if (camera.x > currentLevelWidth - WIDTH) camera.x = currentLevelWidth - WIDTH; if (camera.y < 0) camera.y = 0; if (camera.y > currentLevelHeight - HEIGHT) camera.y = currentLevelHeight - HEIGHT; const now = performance.now(); if (now - lastUiUpdateTime > UI_UPDATE_INTERVAL) { lastUiUpdateTime = now; const elapsedTime = (now - levelStartTime) / 1000; timerEl.textContent = `Time: ${elapsedTime.toFixed(2)}`; deathsCounter.textContent = `Deaths: ${totalDeaths}`; if (player.isSprinting) { sprintStatusEl.textContent = 'SPRINT!'; sprintStatusEl.style.color = '#ff7847'; } else if (now < player.sprintCooldownTimer) { sprintStatusEl.textContent = 'Cooldown'; sprintStatusEl.style.color = 'black'; } else { sprintStatusEl.textContent = 'Sprint Ready'; sprintStatusEl.style.color = 'green'; } } } }
 function draw() { ctx.clearRect(0, 0, WIDTH, HEIGHT); ctx.save(); ctx.translate(-camera.x, -camera.y); platforms.forEach(p => p.draw(ctx)); pushableBlocks.forEach(b => b.draw(ctx)); hazards.forEach(h => h.draw(ctx)); if (goal) goal.draw(ctx); if (player) player.draw(ctx); ctx.restore(); }
-
-// THE FIX IS HERE: The Main Game Loop now handles timed state transitions.
-function gameLoop() {
-    const now = performance.now();
-    // Handle timed state transitions
-    if (gameState === 'LEVEL_START' && now - stateChangeTimestamp > 1500) {
-        switchScreen(gameUI);
-        levelStartTime = now;
-        lastUiUpdateTime = now;
-        gameState = 'PLAYING';
-    }
-    if (gameState === 'DEATH_SCREEN' && now - stateChangeTimestamp > 2000) {
-        if (deathOptions.style.visibility === 'hidden') {
-            deathOptions.style.visibility = 'visible';
-            setFocus(0);
-        }
-    }
-    
-    update();
-    draw();
-    
-    // Only continue the loop if the game is in an active state
-    if (gameState !== 'START') {
-        animationFrameId = requestAnimationFrame(gameLoop);
-    }
-}
+function gameLoop() { const now = performance.now(); if (gameState === 'LEVEL_START' && now - stateChangeTimestamp > 1500) { switchScreen(gameUI); levelStartTime = now; lastUiUpdateTime = now; gameState = 'PLAYING'; } if (gameState === 'DEATH_SCREEN' && now - stateChangeTimestamp > 2000) { if (deathOptions.style.visibility === 'hidden') { deathOptions.style.visibility = 'visible'; setFocus(0); } } update(); draw(); if (gameState !== 'START') { animationFrameId = requestAnimationFrame(gameLoop); } }
 
 // --- Keyboard Navigation ---
 const focusableElements = { START: '#startScreen .focusable', INTERMISSION: '#intermissionScreen .focusable', GAME_COMPLETE: '#gameCompleteScreen .focusable', LEADERBOARD: '#leaderboardScreen .focusable', DEATH_SCREEN: '#deathScreen .focusable', PAUSED: '#pauseScreen .focusable', POWERUP: '#powerupScreen .focusable' };
@@ -76,8 +72,8 @@ function showGameCompleteScreen() { gameState = 'GAME_COMPLETE'; backgroundMusic
 function showStartScreen() { gameState = 'START'; switchScreen(startScreen); gameOverMusic.pause(); gameOverMusic.currentTime = 0; const leaderboard = loadLeaderboard(); bestTimeEl.textContent = (leaderboard.length > 0) ? `Best Run: ${leaderboard[0].time.toFixed(2)}s, ${leaderboard[0].deaths} deaths` : 'Be the first to set a time!'; setFocus(0); }
 function showLeaderboard() { gameState = 'LEADERBOARD'; switchScreen(leaderboardScreen); const leaderboard = loadLeaderboard(); leaderboardListEl.innerHTML = ''; if (leaderboard.length === 0) { leaderboardListEl.innerHTML = '<div>No scores yet!</div>'; } else { leaderboard.forEach((entry, index) => { let div = document.createElement('div'); div.textContent = `${index + 1}. ${entry.name} - Time: ${entry.time.toFixed(2)}s, Deaths: ${entry.deaths}`; leaderboardListEl.appendChild(div); }); } setFocus(0); }
 function togglePause() { if (gameState === 'PLAYING') { gameState = 'PAUSED'; pauseStartTime = performance.now(); cancelAnimationFrame(animationFrameId); pauseLevelStat.textContent = currentLevelIndex + 1; pauseTimeStat.textContent = `${((performance.now() - levelStartTime) / 1000).toFixed(2)}s`; pauseDeathsStat.textContent = totalDeaths; switchScreen(pauseScreen); setFocus(0); } else if (gameState === 'PAUSED') { gameState = 'PLAYING'; const pausedDuration = performance.now() - pauseStartTime; levelStartTime += pausedDuration; switchScreen(gameUI); animationFrameId = requestAnimationFrame(gameLoop); } }
-function loadLeaderboard() { const data = localStorage.getItem('flowyJumperLeaderboard'); return data ? JSON.parse(data) : []; }
-function saveLeaderboard(name, time, deaths) { if (!name) name = 'Anonymous'; const leaderboard = loadLeaderboard(); leaderboard.push({ name, time, deaths }); leaderboard.sort((a, b) => { if (a.time < b.time) return -1; if (a.time > b.time) return 1; return a.deaths - b.deaths; }); localStorage.setItem('flowyJumperLeaderboard', JSON.stringify(leaderboard.slice(0, 10))); }
+async function loadLeaderboard() { try { const snapshot = await leaderboardCollection.orderBy('time', 'asc').orderBy('deaths', 'asc').limit(10).get(); const leaderboard = []; snapshot.forEach(doc => { leaderboard.push(doc.data()); }); return leaderboard; } catch (error) { console.error("Error loading leaderboard:", error); return []; } }
+async function saveLeaderboard(name, time, deaths) { if (!name) name = 'Anonymous'; try { await leaderboardCollection.add({ name: name, time: time, deaths: deaths, createdAt: firebase.firestore.FieldValue.serverTimestamp() }); console.log("Score saved successfully!"); } catch (error) { console.error("Error saving score:", error); } }
 
 // --- Event Listeners ---
 window.addEventListener('keydown', (e) => { const key = e.key.toLowerCase(); keys[key] = true; if (gameState === 'PLAYING') { if (key === 'arrowup' || key === ' ') { e.preventDefault(); player.jump(); } if (key === 'shift') { player.sprint(); } if (key === 'x') { player.dash(); } if (key === 'r') { triggerDeathSequence(); } if (key === 'escape') { e.preventDefault(); togglePause(); } } else { if (key === 'arrowdown' || key === 'tab') { e.preventDefault(); updateFocus(1); } if (key === 'arrowup') { e.preventDefault(); updateFocus(-1); } if (key === 'enter') { e.preventDefault(); const focusedElement = document.querySelector('.focusable.focused'); focusedElement?.click(); } if (key === 'escape' && gameState === 'PAUSED') { e.preventDefault(); togglePause(); } } });
