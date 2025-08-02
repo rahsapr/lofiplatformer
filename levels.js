@@ -2,11 +2,11 @@
 //   LEVEL DATA - The single source of truth for all maps.
 // =======================================================
 // To add a new level, simply:
-// 1. Create a new const variable (e.g., LEVEL_4_MAP).
+// 1. Create a new const variable (e.g., LEVEL_11_MAP).
 // 2. Design your level using the character codes.
 // 3. Add the new variable to the LEVEL_MAPS array at the bottom.
 
-const TILE_SIZE = 40; // This can stay here as it's a core level property.
+const TILE_SIZE = 40;
 
 // --- Level 1: The Original ---
 const LEVEL_1_MAP = [
@@ -41,7 +41,7 @@ const LEVEL_2_MAP = LEVEL_1_MAP.map(row => {
               .replace('S', '_TEMP_').replace('E', 'S').replace('_TEMP_', 'E');
 });
 
-// --- Level 3: A New, Unique Challenge "The Ascent" ---
+// --- Level 3: The Ascent ---
 const LEVEL_3_MAP = [
     "                                                           E",
     "                                                        PPPP",
@@ -53,26 +53,150 @@ const LEVEL_3_MAP = [
     "                       P H P                                ",
     "                     PPPPPPP                                ",
     "                                                            ",
-    "                                                            ",
-    "                                                            ",
-    "            H H H                                           ",
+    "                    P                                       ",
+    "                   P                                        ",
+    "            H H H P                                         ",
     "           PPPPPP P                                         ",
     "                  P                                         ",
     "   S             P                                          ",
     "PPPPPPPPPPPPPPPPPP                                          ",
     "PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP",
-    "PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP",
-    "PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP",
-    "PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP",
-    "PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP",
-    "PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP",
 ];
 
+// --- Level 4: Push Tutorial ---
+const LEVEL_4_MAP = [
+    "                                                            ",
+    "                                                            ",
+    "                                                            ",
+    "                                                            ",
+    "                                                            ",
+    "                                                            ",
+    "                                                            ",
+    "                                                            ",
+    "                        B      P    P                    E   ",
+    " S      P             PPPP   PPPPPP   PPPPPPPPPPPPPPPPPPPPPPPP",
+    " PPPPPPPP                                                     ",
+    "                                                            ",
+    "                                                            ",
+    "                                                            ",
+    "                                                            ",
+    "                                                            ",
+    "                                                            ",
+    "                                                            ",
+];
+
+// --- Level 5: Stairway to Heaven ---
+const LEVEL_5_MAP = [
+    "                                                            ",
+    "                                                            ",
+    "                                                         E  ",
+    "                                                      PPPPPP",
+    "                                                            ",
+    "                                                            ",
+    "                                                            ",
+    "                                       B                    ",
+    "                                    PPPPPP                  ",
+    "                                                            ",
+    "                             B                              ",
+    "                          PPPPPP                            ",
+    "                                                            ",
+    "                   B                                        ",
+    " S              PPPPPP                                      ",
+    " PPPPPPPPPPP                                                  ",
+    "                                                            ",
+    "                                                            ",
+];
+
+// --- Level 6: The Key ---
+const LEVEL_6_MAP = [
+    "                                                            ",
+    "                                                            ",
+    "                                                            ",
+    "                                                            ",
+    "                                                            ",
+    "                                                            ",
+    "         B                                               E  ",
+    "      PPPPPPP              PHHHHHHHHHHHHHHHHHHHHHHHHHHHHHP  ",
+    "                           P                             P  ",
+    "  S                        P                             P  ",
+    "PPPPPPPPPPPPPPPPPPPPPPPPPPPP                             PPPP",
+];
+
+// --- Level 7: Squeeze Puzzle ---
+const LEVEL_7_MAP = [
+    "                                                            ",
+    "                                                            ",
+    "                     P      E      P                        ",
+    "                     P PPPPPPPPPP P                        ",
+    "                     P P          P                        ",
+    "                     P P B        P                        ",
+    "                     P PPPPPPPPPPPP                        ",
+    "                     P                                     ",
+    "                     P                                     ",
+    " S                   P                                     ",
+    "PPPPPPPPPPPPPPPPPPPPPP                                     ",
+];
+
+// --- Level 8: Dash Tutorial ("The Great Leap") ---
+const LEVEL_8_MAP = [
+    "                                                            ",
+    "                                                            ",
+    "                                                            ",
+    "                                                            ",
+    "                                                            ",
+    "                                                            ",
+    "                                                            ",
+    "                                                            ",
+    "                                                            ",
+    " S                                                        E ",
+    "PPPPPPPP                                           PPPPPPPP",
+    "                                                            ",
+    "                                                            ",
+];
+
+// --- Level 9: Block and Dash ---
+const LEVEL_9_MAP = [
+    "                                                            ",
+    "                                                            ",
+    "                                                            ",
+    "                                                            ",
+    "                                                            ",
+    "                                       B                 E  ",
+    "                                    PPPPPP        PPPPPPPPPP",
+    "                                                            ",
+    "                                                            ",
+    " S                                                          ",
+    "PPPPPPP                                                     ",
+    "                                                            ",
+];
+
+// --- Level 10: The Gauntlet ---
+const LEVEL_10_MAP = [
+    "                                                            ",
+    "                                                            ",
+    "                                                            ",
+    "                                                            ",
+    "                                                            ",
+    "                          PPPPPPPPP                      E  ",
+    "                         P         P                  PPPPPP",
+    "                         P H H H H P                        ",
+    "                         P         P                        ",
+    "                 B       P         P                        ",
+    " S        PPPPPPPPPPPPPPPP         PPPPPP                   ",
+    "PPPPPP                                                      ",
+    "                                                            ",
+];
 
 // The main array that the game will use.
-// This is the ONLY place you need to update when adding a new level map.
 const LEVEL_MAPS = [
     LEVEL_1_MAP,
     LEVEL_2_MAP,
-    LEVEL_3_MAP
+    LEVEL_3_MAP,
+    LEVEL_4_MAP,
+    LEVEL_5_MAP,
+    LEVEL_6_MAP,
+    LEVEL_7_MAP,
+    LEVEL_8_MAP,
+    LEVEL_9_MAP,
+    LEVEL_10_MAP,
 ];
