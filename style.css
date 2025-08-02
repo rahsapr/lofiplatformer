@@ -105,13 +105,11 @@ canvas {
     pointer-events: none;
 }
 
-/* In-game UI container for left-side elements */
 #gameUI .left-hud {
     display: flex;
     gap: 20px;
 }
 
-/* Styles for final stats on the win screen */
 #finalStats {
     border: 2px solid #ffd700;
     padding: 10px 30px;
@@ -125,7 +123,19 @@ canvas {
     font-size: 1.4rem;
 }
 
-/* Styles for Settings Panel */
+#deathMessage {
+    color: #cc0000; /* A dark, stark red */
+    font-size: 6rem;
+    text-shadow: 3px 3px 8px black;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
 #settingsPanel {
     margin-top: 30px;
     padding: 15px;
