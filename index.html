@@ -21,18 +21,9 @@
             <button id="leaderboardButton" class="focusable">View Leaderboard</button>
             
             <div id="settingsPanel">
-                <div class="setting-row">
-                    <label for="musicVolumeSlider">Music</label>
-                    <input type="range" id="musicVolumeSlider" min="0" max="1" step="0.1" value="0.5" class="focusable">
-                </div>
-                <div class="setting-row">
-                    <label for="sfxVolumeSlider">SFX</label>
-                    <input type="range" id="sfxVolumeSlider" min="0" max="1" step="0.1" value="0.5" class="focusable">
-                </div>
-                 <div class="setting-row">
-                    <label for="masterMuteCheckbox">Mute All</label>
-                    <input type="checkbox" id="masterMuteCheckbox" class="focusable">
-                </div>
+                <div class="setting-row"><label for="musicVolumeSlider">Music</label><input type="range" id="musicVolumeSlider" min="0" max="1" step="0.1" value="0.5" class="focusable"></div>
+                <div class="setting-row"><label for="sfxVolumeSlider">SFX</label><input type="range" id="sfxVolumeSlider" min="0" max="1" step="0.1" value="0.5" class="focusable"></div>
+                <div class="setting-row"><label for="masterMuteCheckbox">Mute All</label><input type="checkbox" id="masterMuteCheckbox" class="focusable"></div>
             </div>
             <p class="small">Press 'R' to restart level, 'ESC' to Pause</p>
         </div>
@@ -49,10 +40,7 @@
         
         <div id="gameCompleteScreen" class="screen" style="display: none;">
             <h1>You Win!</h1>
-            <div id="finalStats">
-                <p>Total Time: <span id="finalTimeStat"></span></p>
-                <p>Total Deaths: <span id="finalDeathsStat"></span></p>
-            </div>
+            <div id="finalStats"><p>Total Time: <span id="finalTimeStat"></span></p><p>Total Deaths: <span id="finalDeathsStat"></span></p></div>
             <p>Enter Your Name:</p>
             <input type="text" id="nameInput" class="focusable" maxlength="10">
             <button id="submitScoreButton" class="focusable">Save to Leaderboard</button>
@@ -99,10 +87,7 @@
 
         <!-- In-Game UI -->
         <div id="gameUI" style="display: none;">
-            <div class="left-hud">
-                <div id="timer">Time: 0.00</div>
-                <div id="deathsCounter">Deaths: 0</div>
-            </div>
+            <div class="left-hud"><div id="timer">Time: 0.00</div><div id="deathsCounter">Deaths: 0</div></div>
             <div id="sprintStatus">Sprint Ready</div>
         </div>
         <div id="levelStartBanner" class="screen" style="display: none; background-color: rgba(0,0,0,0.5);"><h1 id="levelBannerText">Level 1</h1></div>
