@@ -53,7 +53,7 @@ const LEVEL_3_MAP = [
     "                       P H P                                ",
     "                     PPPPPPP                                ",
     "                                                            ",
-    "                    P                                       ",
+    "                                                           ",
     "                   P                                        ",
     "            H H H P                                         ",
     "           PPPPPP P                                         ",
