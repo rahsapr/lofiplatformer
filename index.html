@@ -19,14 +19,23 @@
         <button id="leaderboardButton">View Leaderboard</button>
         
         <div id="settingsPanel">
-            <div class="setting-row"><label for="musicVolumeSlider">Music</label><input type="range" id="musicVolumeSlider" min="0" max="1" step="0.1" value="0.5"></div>
-            <div class="setting-row"><label for="sfxVolumeSlider">SFX</label><input type="range" id="sfxVolumeSlider" min="0" max="1" step="0.1" value="0.5"></div>
-            <div class="setting-row"><label for="masterMuteCheckbox">Mute All</label><input type="checkbox" id="masterMuteCheckbox"></div>
+            <div class="setting-row">
+                <label for="musicVolumeSlider">Music</label>
+                <input type="range" id="musicVolumeSlider" min="0" max="1" step="0.1" value="0.5">
+            </div>
+            <div class="setting-row">
+                <label for="sfxVolumeSlider">SFX</label>
+                <input type="range" id="sfxVolumeSlider" min="0" max="1" step="0.1" value="0.5">
+            </div>
+             <div class="setting-row">
+                <label for="masterMuteCheckbox">Mute All</label>
+                <input type="checkbox" id="masterMuteCheckbox">
+            </div>
         </div>
         <p class="small">Press 'R' to restart at any time.</p>
     </div>
 
-    <!-- NEW: Screen shown between levels -->
+    <!-- Screen shown between levels -->
     <div id="intermissionScreen" class="screen" style="display: none;">
         <h1>Level Complete!</h1>
         <p>Ready for the next challenge?</p>
@@ -37,7 +46,7 @@
         </div>
     </div>
     
-    <!-- NEW: Screen shown after beating the FINAL level -->
+    <!-- Screen shown after beating the FINAL level -->
     <div id="gameCompleteScreen" class="screen" style="display: none;">
         <h1>You Win!</h1>
         <div id="finalStats">
@@ -57,8 +66,11 @@
 
     <!-- UI Overlays (In-Game) -->
     <div id="gameUI" style="display: none;">
-        <div id="timer">Time: 0.00</div>
-        <div id="deathsCounter">Deaths: 0</div> <!-- Updated -->
+        <div class="left-hud">
+            <div id="timer">Time: 0.00</div>
+            <div id="deathsCounter">Deaths: 0</div>
+        </div>
+        <div id="sprintStatus">Sprint Ready</div>
     </div>
     
     <div id="levelStartBanner" class="screen" style="display: none; background-color: rgba(0,0,0,0.5);">
