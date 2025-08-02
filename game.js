@@ -10,11 +10,11 @@ function saveSettings() { localStorage.setItem('flowyJumperSettings', JSON.strin
 const WIDTH = 1024, HEIGHT = 768; canvas.width = WIDTH; canvas.height = HEIGHT;
 const PLAYER_ACC = 0.6, PLAYER_SPRINT_ACC = 1.2, PLAYER_FRICTION = -0.12, PLAYER_GRAVITY = 0.8, PLAYER_JUMP_STRENGTH = -18, PLAYER_SPRINT_JUMP_STRENGTH = -22, PLAYER_SPRINT_DURATION = 250, PLAYER_SPRINT_COOLDOWN = 1000;
 const PLAYER_DASH_SPEED = 15, PLAYER_DASH_DURATION = 150;
-const UI_UPDATE_INTERVAL = 100; // ms, for throttling UI updates
+const UI_UPDATE_INTERVAL = 100;
 
 // --- Game State & Classes ---
 let keys = {}, player, platforms, pushableBlocks, hazards, goal, camera = { x: 0, y: 0 },
-    levelStartTime, pauseStartTime, animationFrameId, currentLevelIndex = 0, lastUiUpdateTime = 0;
+    levelStartTime, pauseStartTime, animationFrameId, currentLevelIndex = 0, lastUiUpdateTime = 0, stateChangeTimestamp = 0;
 let gameState = 'START';
 let totalPlaythroughTime = 0, totalDeaths = 0;
 let currentFocusIndex = 0;
@@ -30,31 +30,36 @@ class PushableBlock { constructor(x, y) { this.x = x; this.y = y; this.width = T
 // --- Game Logic ---
 let gameStartPos = { x: 0, y: 0 };
 function initLevel(levelIndex) { platforms = []; pushableBlocks = []; hazards = []; let foundStart = false; const levelMap = LEVEL_MAPS[levelIndex]; currentLevelHeight = levelMap.length * TILE_SIZE; currentLevelWidth = levelMap[0].length * TILE_SIZE; levelMap.forEach((row, rowIndex) => { for (let colIndex = 0; colIndex < row.length; colIndex++) { const tile = row[colIndex]; const x = colIndex * TILE_SIZE; const y = rowIndex * TILE_SIZE; if (tile === 'P') { platforms.push(new Platform(x, y)); if (levelMap[rowIndex-1] && levelMap[rowIndex-1][colIndex] === 'S' && !foundStart) { gameStartPos = { x: x + (TILE_SIZE / 2) - ((TILE_SIZE-8)/2), y: y - (TILE_SIZE * 1.5) }; foundStart = true; } } else if (tile === 'B') { pushableBlocks.push(new PushableBlock(x,y)); } else if (tile === 'H') { hazards.push(new Hazard(x, y)); } else if (tile === 'E') { goal = new Goal(x, y); } } }); player = new Player(gameStartPos.x, gameStartPos.y); }
-function triggerDeathSequence() { if (gameState !== 'PLAYING') return; gameState = 'DEATH_SCREEN'; cancelAnimationFrame(animationFrameId); totalDeaths++; backgroundMusic.pause(); gameOverMusic.currentTime = 0; gameOverMusic.play().catch(e => console.error("Game over audio failed:", e)); switchScreen(deathScreen); deathOptions.style.visibility = 'hidden'; setTimeout(() => { if (gameState === 'DEATH_SCREEN') { deathOptions.style.visibility = 'visible'; setFocus(0); } }, 2000); }
+function triggerDeathSequence() { if (gameState !== 'PLAYING') return; gameState = 'DEATH_SCREEN'; stateChangeTimestamp = performance.now(); totalDeaths++; backgroundMusic.pause(); gameOverMusic.currentTime = 0; gameOverMusic.play().catch(e => console.error("Game over audio failed:", e)); switchScreen(deathScreen); deathOptions.style.visibility = 'hidden'; }
 function checkOtherCollisions() { const playerRect = { x: player.pos.x, y: player.pos.y, width: player.width, height: player.height }; for(const h of hazards) { if (isColliding(playerRect, h)) { triggerDeathSequence(); return; } } if (goal && isColliding(playerRect, goal)) { completeLevel(); return; } if (player.pos.y > currentLevelHeight + 200) { triggerDeathSequence(); } }
-function update() {
-    if (gameState !== 'PLAYING') return;
-    player.update(platforms, pushableBlocks);
-    checkOtherCollisions();
-    const targetCamX = player.pos.x + player.width / 2 - WIDTH / 2; const targetCamY = player.pos.y + player.height / 2 - HEIGHT / 2;
-    camera.x += (targetCamX - camera.x) * 0.08; camera.y += (targetCamY - camera.y) * 0.08;
-    if (camera.x < 0) camera.x = 0; if (camera.x > currentLevelWidth - WIDTH) camera.x = currentLevelWidth - WIDTH;
-    if (camera.y < 0) camera.y = 0; if (camera.y > currentLevelHeight - HEIGHT) camera.y = currentLevelHeight - HEIGHT;
-    
-    // THE FIX: Throttle UI updates to prevent layout thrashing
+function update() { if (gameState !== 'PLAYING' && gameState !== 'PAUSED') return; if (gameState === 'PAUSED') return; player.update(platforms, pushableBlocks); checkOtherCollisions(); const targetCamX = player.pos.x + player.width / 2 - WIDTH / 2; const targetCamY = player.pos.y + player.height / 2 - HEIGHT / 2; camera.x += (targetCamX - camera.x) * 0.08; camera.y += (targetCamY - camera.y) * 0.08; if (camera.x < 0) camera.x = 0; if (camera.x > currentLevelWidth - WIDTH) camera.x = currentLevelWidth - WIDTH; if (camera.y < 0) camera.y = 0; if (camera.y > currentLevelHeight - HEIGHT) camera.y = currentLevelHeight - HEIGHT; const now = performance.now(); if (now - lastUiUpdateTime > UI_UPDATE_INTERVAL) { lastUiUpdateTime = now; const elapsedTime = (now - levelStartTime) / 1000; timerEl.textContent = `Time: ${elapsedTime.toFixed(2)}`; deathsCounter.textContent = `Deaths: ${totalDeaths}`; if (player.isSprinting) { sprintStatusEl.textContent = 'SPRINT!'; sprintStatusEl.style.color = '#ff7847'; } else if (now < player.sprintCooldownTimer) { sprintStatusEl.textContent = 'Cooldown'; sprintStatusEl.style.color = 'black'; } else { sprintStatusEl.textContent = 'Sprint Ready'; sprintStatusEl.style.color = 'green'; } } }
+function draw() { ctx.clearRect(0, 0, WIDTH, HEIGHT); ctx.save(); ctx.translate(-camera.x, -camera.y); platforms.forEach(p => p.draw(ctx)); pushableBlocks.forEach(b => b.draw(ctx)); hazards.forEach(h => h.draw(ctx)); if (goal) goal.draw(ctx); if (player) player.draw(ctx); ctx.restore(); }
+
+// THE FIX IS HERE: The Main Game Loop now handles timed state transitions.
+function gameLoop() {
     const now = performance.now();
-    if (now - lastUiUpdateTime > UI_UPDATE_INTERVAL) {
+    // Handle timed state transitions
+    if (gameState === 'LEVEL_START' && now - stateChangeTimestamp > 1500) {
+        switchScreen(gameUI);
+        levelStartTime = now;
         lastUiUpdateTime = now;
-        const elapsedTime = (now - levelStartTime) / 1000;
-        timerEl.textContent = `Time: ${elapsedTime.toFixed(2)}`;
-        deathsCounter.textContent = `Deaths: ${totalDeaths}`;
-        if (player.isSprinting) { sprintStatusEl.textContent = 'SPRINT!'; sprintStatusEl.style.color = '#ff7847';
-        } else if (now < player.sprintCooldownTimer) { sprintStatusEl.textContent = 'Cooldown'; sprintStatusEl.style.color = 'black';
-        } else { sprintStatusEl.textContent = 'Sprint Ready'; sprintStatusEl.style.color = 'green'; }
+        gameState = 'PLAYING';
+    }
+    if (gameState === 'DEATH_SCREEN' && now - stateChangeTimestamp > 2000) {
+        if (deathOptions.style.visibility === 'hidden') {
+            deathOptions.style.visibility = 'visible';
+            setFocus(0);
+        }
+    }
+    
+    update();
+    draw();
+    
+    // Only continue the loop if the game is in an active state
+    if (gameState !== 'START') {
+        animationFrameId = requestAnimationFrame(gameLoop);
     }
 }
-function draw() { ctx.clearRect(0, 0, WIDTH, HEIGHT); ctx.save(); ctx.translate(-camera.x, -camera.y); platforms.forEach(p => p.draw(ctx)); pushableBlocks.forEach(b => b.draw(ctx)); hazards.forEach(h => h.draw(ctx)); if (goal) goal.draw(ctx); if (player) player.draw(ctx); ctx.restore(); }
-function gameLoop() { if (gameState === 'START') return; update(); draw(); animationFrameId = requestAnimationFrame(gameLoop); }
 
 // --- Keyboard Navigation ---
 const focusableElements = { START: '#startScreen .focusable', INTERMISSION: '#intermissionScreen .focusable', GAME_COMPLETE: '#gameCompleteScreen .focusable', LEADERBOARD: '#leaderboardScreen .focusable', DEATH_SCREEN: '#deathScreen .focusable', PAUSED: '#pauseScreen .focusable', POWERUP: '#powerupScreen .focusable' };
@@ -63,8 +68,8 @@ function setFocus(index) { currentFocusIndex = index; updateFocus(0); }
 
 // --- Game State Management ---
 function switchScreen(screenToShow) { [startScreen, intermissionScreen, gameCompleteScreen, leaderboardScreen, deathScreen, pauseScreen, powerupScreen, gameUI, levelStartBanner].forEach(s => s.style.display = 'none'); screenToShow.style.display = 'flex'; }
-function startGame(levelIndex) { if (levelIndex === 0) { totalPlaythroughTime = 0; totalDeaths = 0; loadProgress(); } currentLevelIndex = levelIndex; gameOverMusic.pause(); gameOverMusic.currentTime = 0; if (backgroundMusic.paused) { backgroundMusic.play().catch(e => console.error("Audio play failed:", e)); } initLevel(levelIndex); camera.x = player.pos.x - WIDTH / 2; gameState = 'LEVEL_START'; levelBannerText.textContent = `Level ${levelIndex + 1}`; switchScreen(levelStartBanner); if(animationFrameId) cancelAnimationFrame(animationFrameId); animationFrameId = requestAnimationFrame(gameLoop); setTimeout(() => { if (gameState !== 'LEVEL_START') return; switchScreen(gameUI); levelStartTime = performance.now(); gameState = 'PLAYING'; }, 1500); }
-function completeLevel() { if (gameState !== 'PLAYING') return; cancelAnimationFrame(animationFrameId); const levelTime = (performance.now() - levelStartTime) / 1000; totalPlaythroughTime += levelTime; let newPowerUnlocked = false; let powerupMsg = ""; if(currentLevelIndex === 2 && !unlockedPowers.canPush) { unlockedPowers.canPush = true; newPowerUnlocked = true; powerupMsg = "You can now PUSH orange blocks! Controls: Walk into them."; } if(currentLevelIndex === 6 && !unlockedPowers.canDash) { unlockedPowers.canDash = true; newPowerUnlocked = true; powerupMsg = "You can now AIR DASH! Controls: Press [X] in mid-air."; } if(newPowerUnlocked) { saveProgress(); showPowerupScreen(powerupMsg); } else { const isLastLevel = currentLevelIndex >= LEVEL_MAPS.length - 1; if (isLastLevel) { showGameCompleteScreen(); } else { showIntermissionScreen(); } } }
+function startGame(levelIndex) { if (levelIndex === 0) { totalPlaythroughTime = 0; totalDeaths = 0; loadProgress(); } currentLevelIndex = levelIndex; gameOverMusic.pause(); gameOverMusic.currentTime = 0; if (backgroundMusic.paused) { backgroundMusic.play().catch(e => console.error("Audio play failed:", e)); } initLevel(levelIndex); camera.x = player.pos.x - WIDTH / 2; gameState = 'LEVEL_START'; stateChangeTimestamp = performance.now(); levelBannerText.textContent = `Level ${levelIndex + 1}`; switchScreen(levelStartBanner); if(animationFrameId) cancelAnimationFrame(animationFrameId); animationFrameId = requestAnimationFrame(gameLoop); }
+function completeLevel() { if (gameState !== 'PLAYING') return; gameState = 'INTERMISSION'; cancelAnimationFrame(animationFrameId); const levelTime = (performance.now() - levelStartTime) / 1000; totalPlaythroughTime += levelTime; let newPowerUnlocked = false; let powerupMsg = ""; if(currentLevelIndex === 2 && !unlockedPowers.canPush) { unlockedPowers.canPush = true; newPowerUnlocked = true; powerupMsg = "You can now PUSH orange blocks! Controls: Walk into them."; } if(currentLevelIndex === 6 && !unlockedPowers.canDash) { unlockedPowers.canDash = true; newPowerUnlocked = true; powerupMsg = "You can now AIR DASH! Controls: Press [X] in mid-air."; } if(newPowerUnlocked) { saveProgress(); showPowerupScreen(powerupMsg); } else { const isLastLevel = currentLevelIndex >= LEVEL_MAPS.length - 1; if (isLastLevel) { showGameCompleteScreen(); } else { showIntermissionScreen(); } } }
 function showPowerupScreen(message) { gameState = 'POWERUP'; powerupMessage.textContent = message; switchScreen(powerupScreen); setFocus(0); }
 function showIntermissionScreen() { gameState = 'INTERMISSION'; switchScreen(intermissionScreen); setFocus(0); }
 function showGameCompleteScreen() { gameState = 'GAME_COMPLETE'; backgroundMusic.pause(); backgroundMusic.currentTime = 0; gameOverMusic.play().catch(e => console.error("Audio play failed:", e)); switchScreen(gameCompleteScreen); setFocus(0); finalTimeStat.textContent = `${totalPlaythroughTime.toFixed(2)}s`; finalDeathsStat.textContent = totalDeaths; nameInput.focus(); }
