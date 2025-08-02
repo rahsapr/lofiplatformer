@@ -64,6 +64,19 @@
         <button id="backButton">Back</button>
     </div>
 
+    <!-- NEW: Death Screen -->
+    <div id="deathScreen" class="screen" style="display: none;">
+        <h1 id="deathMessage">You Died</h1>
+        <!-- This container will be hidden for 3 seconds -->
+        <div id="deathOptions" style="visibility: hidden;">
+            <p>Try again?</p>
+            <div class="button-row">
+                <button id="restartFromDeathButton">Restart Level</button>
+                <button id="homeFromDeathButton">Return to Home</button>
+            </div>
+        </div>
+    </div>
+
     <!-- UI Overlays (In-Game) -->
     <div id="gameUI" style="display: none;">
         <div class="left-hud">
