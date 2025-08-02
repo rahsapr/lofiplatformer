@@ -18,32 +18,35 @@
         <button id="startButton">Start Game</button>
         <button id="leaderboardButton">View Leaderboard</button>
         
-        <!-- Settings Panel -->
         <div id="settingsPanel">
-            <div class="setting-row">
-                <label for="musicVolumeSlider">Music</label>
-                <input type="range" id="musicVolumeSlider" min="0" max="1" step="0.1" value="0.5">
-            </div>
-            <div class="setting-row">
-                <label for="sfxVolumeSlider">SFX</label>
-                <input type="range" id="sfxVolumeSlider" min="0" max="1" step="0.1" value="0.5">
-            </div>
-             <div class="setting-row">
-                <label for="masterMuteCheckbox">Mute All</label>
-                <input type="checkbox" id="masterMuteCheckbox">
-            </div>
+            <div class="setting-row"><label for="musicVolumeSlider">Music</label><input type="range" id="musicVolumeSlider" min="0" max="1" step="0.1" value="0.5"></div>
+            <div class="setting-row"><label for="sfxVolumeSlider">SFX</label><input type="range" id="sfxVolumeSlider" min="0" max="1" step="0.1" value="0.5"></div>
+            <div class="setting-row"><label for="masterMuteCheckbox">Mute All</label><input type="checkbox" id="masterMuteCheckbox"></div>
         </div>
-
         <p class="small">Press 'R' to restart at any time.</p>
     </div>
 
-    <div id="endScreen" class="screen" style="display: none;">
+    <!-- NEW: Screen shown between levels -->
+    <div id="intermissionScreen" class="screen" style="display: none;">
         <h1>Level Complete!</h1>
-        <h2 id="finalTime"></h2>
-        <p>Enter Your Name (max 10 chars):</p>
+        <p>Ready for the next challenge?</p>
+        <div class="button-row">
+            <button id="nextLevelButton">Next Level</button>
+            <button id="replayButton">Replay Level</button>
+            <button id="homeButton">Return to Home</button>
+        </div>
+    </div>
+    
+    <!-- NEW: Screen shown after beating the FINAL level -->
+    <div id="gameCompleteScreen" class="screen" style="display: none;">
+        <h1>You Win!</h1>
+        <div id="finalStats">
+            <p>Total Time: <span id="finalTimeStat"></span></p>
+            <p>Total Deaths: <span id="finalDeathsStat"></span></p>
+        </div>
+        <p>Enter Your Name:</p>
         <input type="text" id="nameInput" maxlength="10">
-        <button id="submitScoreButton">Save Score</button>
-        <p class="small">Or press Enter to finish</p>
+        <button id="submitScoreButton">Save to Leaderboard</button>
     </div>
 
     <div id="leaderboardScreen" class="screen" style="display: none;">
@@ -52,30 +55,17 @@
         <button id="backButton">Back</button>
     </div>
 
-    <div id="levelCompleteScreen" class="screen" style="display: none;">
-        <h1 id="levelCompleteTitle">Congratulations!</h1>
-        <p id="levelCompleteMessage">You finished the level!</p>
-        <div class="button-row">
-            <button id="nextLevelButton">Next Level</button>
-            <button id="replayButton">Replay Level</button>
-            <button id="homeButton">Return to Home</button>
-        </div>
-    </div>
-
-
     <!-- UI Overlays (In-Game) -->
     <div id="gameUI" style="display: none;">
         <div id="timer">Time: 0.00</div>
-        <div id="sprintStatus">Sprint Ready</div>
+        <div id="deathsCounter">Deaths: 0</div> <!-- Updated -->
     </div>
     
-    <!-- Level Start Banner -->
     <div id="levelStartBanner" class="screen" style="display: none; background-color: rgba(0,0,0,0.5);">
         <h1 id="levelBannerText">Level 1</h1>
     </div>
 
-
-    <!-- SCRIPT ORDER IS IMPORTANT! -->
+    <!-- Script loading order -->
     <script src="levels.js"></script>
     <script src="game.js"></script>
 </body>
