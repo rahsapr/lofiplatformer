@@ -112,22 +112,22 @@ const LEVEL_6_MAP = [
     "                                                            ",
     "                                                            ",
     "                                                            ",
-    "                                                            ",
+    "                                 B                          ",
     "                               PPPPPPPPP                    ",
     "                               P                            ",
     "                               P                            ",
     "                               P H H H H H H H H H H H H H E",
     "                               PPPPPPPPPPPPPPPPPPPPPPPPPPPPP",
-    "  S      B                     P                            ",
+    "  S                            P                            ",
     "PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP                            ",
 ];
 
 // --- Level 7: Squeeze Puzzle ---
 const LEVEL_7_MAP = [
-    "                                                            ",
-    "                                                            ",
-    "                     P      E      P                        ",
-    "                     P PPPPPPPPPP P                        ",
+    "                     P                                     ",
+    "                     P                                     ",
+    "                     P            P                        ",
+    "                     P PPPPPPPPPP P                E       ",
     "                     P P          P                        ",
     "                     P P B        P                        ",
     "                     P PPPPPPPPPPPP                        ",
@@ -149,7 +149,7 @@ const LEVEL_8_MAP = [
     "                                                            ",
     "                                                            ",
     " S                                                E         ",
-    "PPPPPPPPP                    PPPPPPPPP                      ",
+    "PPPPPPPPP                  PPPPPPPPPPP                      ",
     "                                                            ",
 ];
 
@@ -163,7 +163,7 @@ const LEVEL_9_MAP = [
     "                                       B                 E  ",
     "                                    PPPPPP        PPPPPPPPPP",
     "                                                            ",
-    "                                                            ",
+    "                         PP                                 ",
     " S                                                          ",
     "PPPPPPP                                                     ",
     "                                                            ",
