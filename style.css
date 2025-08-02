@@ -70,7 +70,7 @@ canvas {
     background-color: #e66a3f;
 }
 
-.screen input {
+.screen input[type="text"] {
     font-size: 1.5rem;
     padding: 10px;
     text-align: center;
@@ -78,7 +78,6 @@ canvas {
     margin-top: 10px;
 }
 
-/* NEW: Style for horizontal button layout */
 .button-row {
     display: flex;
     gap: 20px; /* Adds space between buttons */
@@ -92,7 +91,6 @@ canvas {
     margin: 10px 0;
 }
 
-/* In-Game UI */
 #gameUI {
     position: absolute;
     top: 10px;
@@ -105,4 +103,29 @@ canvas {
     display: flex;
     justify-content: space-between;
     pointer-events: none; /* Allows clicks to go through to the canvas */
+}
+
+/* Styles for Settings Panel */
+#settingsPanel {
+    margin-top: 30px;
+    padding: 15px;
+    border: 1px solid white;
+    border-radius: 10px;
+    background-color: rgba(0, 0, 0, 0.3);
+    width: 300px;
+}
+
+.setting-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 5px 0;
+}
+
+.setting-row label {
+    font-size: 1.2rem;
+}
+
+.setting-row input[type="range"] {
+    width: 60%;
 }
