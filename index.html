@@ -7,76 +7,107 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <canvas id="gameCanvas"></canvas>
 
-    <!-- UI Screens -->
-    <div id="startScreen" class="screen">
-        <h1>Flowy Jumper</h1>
-        <h2 id="bestTime">Best Time: ---</h2>
-        <p>Controls: A/D or Arrows to Move</p>
-        <p>SPACE to Jump, L-SHIFT to Sprint</p>
-        <button id="startButton">Start Game</button>
-        <button id="leaderboardButton">View Leaderboard</button>
-        
-        <div id="settingsPanel">
-            <div class="setting-row"><label for="musicVolumeSlider">Music</label><input type="range" id="musicVolumeSlider" min="0" max="1" step="0.1" value="0.5"></div>
-            <div class="setting-row"><label for="sfxVolumeSlider">SFX</label><input type="range" id="sfxVolumeSlider" min="0" max="1" step="0.1" value="0.5"></div>
-            <div class="setting-row"><label for="masterMuteCheckbox">Mute All</label><input type="checkbox" id="masterMuteCheckbox"></div>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- UI Screens -->
+        <div id="startScreen" class="screen">
+            <h1>Flowy Jumper</h1>
+            <h2 id="bestTime">Best Time: ---</h2>
+            <p>Controls: Arrow Keys to Move, Arrow Up to Jump</p>
+            <p>SHIFT to Sprint, X to Dash</p>
+            <button id="startButton" class="focusable">Start Game</button>
+            <button id="leaderboardButton" class="focusable">View Leaderboard</button>
+            
+            <div id="settingsPanel">
+                <div class="setting-row">
+                    <label for="musicVolumeSlider">Music</label>
+                    <input type="range" id="musicVolumeSlider" min="0" max="1" step="0.1" value="0.5" class="focusable">
+                </div>
+                <div class="setting-row">
+                    <label for="sfxVolumeSlider">SFX</label>
+                    <input type="range" id="sfxVolumeSlider" min="0" max="1" step="0.1" value="0.5" class="focusable">
+                </div>
+                 <div class="setting-row">
+                    <label for="masterMuteCheckbox">Mute All</label>
+                    <input type="checkbox" id="masterMuteCheckbox" class="focusable">
+                </div>
+            </div>
+            <p class="small">Press 'R' to restart level, 'ESC' to Pause</p>
         </div>
-        <p class="small">Press 'R' to restart at any time.</p>
-    </div>
 
-    <div id="intermissionScreen" class="screen" style="display: none;">
-        <h1>Level Complete!</h1>
-        
-        <!-- Container for power-up notifications -->
-        <div id="powerupNotification" style="display: none;">
-            <h2>Power-Up Unlocked!</h2>
-            <p id="powerupMessage"></p>
-        </div>
-
-        <p>Ready for the next challenge?</p>
-        <div class="button-row">
-            <button id="nextLevelButton">Next Level</button>
-            <button id="replayButton">Replay Level</button>
-            <button id="homeButton">Return to Home</button>
-        </div>
-    </div>
-    
-    <div id="gameCompleteScreen" class="screen" style="display: none;">
-        <h1>You Win!</h1>
-        <div id="finalStats"><p>Total Time: <span id="finalTimeStat"></span></p><p>Total Deaths: <span id="finalDeathsStat"></span></p></div>
-        <p>Enter Your Name:</p>
-        <input type="text" id="nameInput" maxlength="10">
-        <button id="submitScoreButton">Save to Leaderboard</button>
-    </div>
-
-    <div id="leaderboardScreen" class="screen" style="display: none;">
-        <h1>Leaderboard</h1>
-        <div id="leaderboardList"></div>
-        <button id="backButton">Back</button>
-    </div>
-
-    <div id="deathScreen" class="screen" style="display: none;">
-        <h1 id="deathMessage">You Died</h1>
-        <div id="deathOptions" style="visibility: hidden;">
-            <p>Try again?</p>
+        <div id="intermissionScreen" class="screen" style="display: none;">
+            <h1>Level Complete!</h1>
+            <p>Ready for the next challenge?</p>
             <div class="button-row">
-                <button id="restartFromDeathButton">Restart Level</button>
-                <button id="homeFromDeathButton">Return to Home</button>
+                <button id="nextLevelButton" class="focusable">Next Level</button>
+                <button id="replayButton" class="focusable">Replay Level</button>
+                <button id="homeButton" class="focusable">Return to Home</button>
             </div>
         </div>
+        
+        <div id="gameCompleteScreen" class="screen" style="display: none;">
+            <h1>You Win!</h1>
+            <div id="finalStats">
+                <p>Total Time: <span id="finalTimeStat"></span></p>
+                <p>Total Deaths: <span id="finalDeathsStat"></span></p>
+            </div>
+            <p>Enter Your Name:</p>
+            <input type="text" id="nameInput" class="focusable" maxlength="10">
+            <button id="submitScoreButton" class="focusable">Save to Leaderboard</button>
+        </div>
+
+        <div id="leaderboardScreen" class="screen" style="display: none;">
+            <h1>Leaderboard</h1>
+            <div id="leaderboardList"></div>
+            <button id="backButton" class="focusable">Back</button>
+        </div>
+
+        <div id="deathScreen" class="screen" style="display: none;">
+            <h1 id="deathMessage">You Died</h1>
+            <div id="deathOptions" style="visibility: hidden;">
+                <p>Try again?</p>
+                <div class="button-row">
+                    <button id="restartFromDeathButton" class="focusable">Restart Level</button>
+                    <button id="homeFromDeathButton" class="focusable">Return to Home</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="pauseScreen" class="screen" style="display: none; background-color: rgba(0,0,0,0.8);">
+            <h1>Paused</h1>
+            <div id="pauseStats">
+                <p>Current Level: <span id="pauseLevelStat"></span></p>
+                <p>Time Elapsed: <span id="pauseTimeStat"></span></p>
+                <p>Total Deaths: <span id="pauseDeathsStat"></span></p>
+            </div>
+            <div class="button-row">
+                <button id="resumeButton" class="focusable">Resume</button>
+                <button id="pauseRestartButton" class="focusable">Restart Level</button>
+                <button id="pauseHomeButton" class="focusable">Return to Home</button>
+            </div>
+        </div>
+
+        <div id="powerupScreen" class="screen" style="display: none;">
+            <div id="powerupNotification">
+                <h2>POWER-UP UNLOCKED!</h2>
+                <p id="powerupMessage"></p>
+            </div>
+            <button id="continueButton" class="focusable">Continue</button>
+        </div>
+
+        <!-- In-Game UI -->
+        <div id="gameUI" style="display: none;">
+            <div class="left-hud">
+                <div id="timer">Time: 0.00</div>
+                <div id="deathsCounter">Deaths: 0</div>
+            </div>
+            <div id="sprintStatus">Sprint Ready</div>
+        </div>
+        <div id="levelStartBanner" class="screen" style="display: none; background-color: rgba(0,0,0,0.5);"><h1 id="levelBannerText">Level 1</h1></div>
     </div>
 
-    <!-- UI Overlays (In-Game) -->
-    <div id="gameUI" style="display: none;">
-        <div class="left-hud"><div id="timer">Time: 0.00</div><div id="deathsCounter">Deaths: 0</div></div>
-        <div id="sprintStatus">Sprint Ready</div>
-    </div>
-    
-    <div id="levelStartBanner" class="screen" style="display: none; background-color: rgba(0,0,0,0.5);"><h1 id="levelBannerText">Level 1</h1></div>
-
-    <!-- Script loading order -->
     <script src="levels.js"></script>
     <script src="game.js"></script>
 </body>
