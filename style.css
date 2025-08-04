@@ -40,16 +40,13 @@ canvas {
 
 /* --- UPDATED STYLES FOR THE START SCREEN --- */
 #startScreen {
-    /* Remove the old background color */
     background-color: transparent;
-    /* Set the new background image */
     background-image: url('assets/startbackground.jpeg');
-    background-size: cover; /* Ensures the image covers the area without distortion */
-    background-position: center; /* Centers the image */
-    z-index: 0; /* Required for the overlay to work */
+    background-size: cover;
+    background-position: center;
+    z-index: 0;
 }
 
-/* This pseudo-element creates the dark overlay */
 #startScreen::before {
     content: '';
     position: absolute;
@@ -57,11 +54,10 @@ canvas {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent black overlay */
-    z-index: -1; /* Places the overlay behind the text but on top of the background image */
+    background-color: rgba(0, 0, 0, 0.6);
+    z-index: -1;
 }
 
-/* This makes the text readable against the new background */
 #startScreen h1,
 #startScreen h2,
 #startScreen p {
@@ -82,7 +78,8 @@ canvas {
 #leaderboardList div { margin: 10px 0; }
 
 #gameUI { position: absolute; top: 10px; left: 10px; width: calc(100% - 20px); color: black; font-size: 1.5rem; font-weight: bold; display: flex; justify-content: space-between; pointer-events: none; background-color: transparent; }
-#gameUI .left-hud { display: flex; gap: 20px; }
+#gameUI .left-hud { display: flex; gap: 20px; align-items: center; }
+#collectiblesCounter { font-size: 1.6rem; color: #00aaff; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
 #finalStats { border: 2px solid #ffd700; padding: 10px 30px; margin-bottom: 20px; border-radius: 10px; background-color: rgba(255, 255, 255, 0.1); }
 #finalStats p { margin: 5px; font-size: 1.4rem; }
 #powerupNotification { border: 4px solid #32cd32; background: linear-gradient(145deg, rgba(50, 205, 50, 0.2), rgba(50, 205, 50, 0.4)); padding: 30px 50px; margin: 20px; border-radius: 15px; box-shadow: 0 0 25px rgba(50, 205, 50, 0.5); }
