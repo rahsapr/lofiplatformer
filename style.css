@@ -38,6 +38,38 @@ canvas {
     text-align: center;
 }
 
+/* --- UPDATED STYLES FOR THE START SCREEN --- */
+#startScreen {
+    /* Remove the old background color */
+    background-color: transparent;
+    /* Set the new background image */
+    background-image: url('assets/startbackground.jpeg');
+    background-size: cover; /* Ensures the image covers the area without distortion */
+    background-position: center; /* Centers the image */
+    z-index: 0; /* Required for the overlay to work */
+}
+
+/* This pseudo-element creates the dark overlay */
+#startScreen::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent black overlay */
+    z-index: -1; /* Places the overlay behind the text but on top of the background image */
+}
+
+/* This makes the text readable against the new background */
+#startScreen h1,
+#startScreen h2,
+#startScreen p {
+    text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.8);
+}
+/* --- END OF UPDATED STYLES --- */
+
+
 .screen h1 { font-size: 4rem; margin-bottom: 20px; }
 .screen h2 { color: #ffd700; margin-bottom: 30px; }
 .screen p { font-size: 1.2rem; margin: 5px 0; }

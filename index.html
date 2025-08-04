@@ -7,24 +7,18 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
     <div id="gameContainer">
         <canvas id="gameCanvas"></canvas>
 
-        <!-- NEW: Loading Screen -->
-        <div id="loadingScreen" class="screen">
-            <h1>Loading...</h1>
-        </div>
-
-        <div id="startScreen" class="screen" style="display: none;">
+        <div id="startScreen" class="screen">
             <h1>Flowy Jumper</h1>
             <h2 id="bestTime">Best Time: ---</h2>
             <p>Controls: Arrow Keys to Move, Arrow Up to Jump</p>
             <p>SHIFT to Sprint, X to Dash</p>
-            <button id="startButton" class="focusable" disabled>Start Game</button>
+            <button id="startButton" class="focusable">Start Game</button>
             <button id="leaderboardButton" class="focusable">View Leaderboard</button>
-            
             <div id="settingsPanel">
+                <div class="setting-row"><label for="gameSpeedSlider">Game Speed</label><input type="range" id="gameSpeedSlider" min="0.7" max="1.3" step="0.1" value="1.0" class="focusable"></div>
                 <div class="setting-row"><label for="musicVolumeSlider">Music</label><input type="range" id="musicVolumeSlider" min="0" max="1" step="0.1" value="0.5" class="focusable"></div>
                 <div class="setting-row"><label for="sfxVolumeSlider">SFX</label><input type="range" id="sfxVolumeSlider" min="0" max="1" step="0.1" value="0.5" class="focusable"></div>
                 <div class="setting-row"><label for="masterMuteCheckbox">Mute All</label><input type="checkbox" id="masterMuteCheckbox" class="focusable"></div>
