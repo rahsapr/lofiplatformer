@@ -11,7 +11,7 @@
     <div id="gameContainer">
         <canvas id="gameCanvas"></canvas>
 
-        <!-- All UI Screens are inside the container -->
+        <!-- UI Screens -->
         <div id="startScreen" class="screen">
             <h1>Flowy Jumper</h1>
             <h2 id="bestTime">Best Time: ---</h2>
@@ -30,10 +30,6 @@
 
         <div id="intermissionScreen" class="screen" style="display: none;">
             <h1>Level Complete!</h1>
-            <div id="powerupNotification" style="display: none;">
-                <h2>Power-Up Unlocked!</h2>
-                <p id="powerupMessage"></p>
-            </div>
             <p>Ready for the next challenge?</p>
             <div class="button-row">
                 <button id="nextLevelButton" class="focusable">Next Level</button>
@@ -89,21 +85,14 @@
             <button id="continueButton" class="focusable">Continue</button>
         </div>
 
+        <!-- In-Game UI -->
         <div id="gameUI" style="display: none;">
             <div class="left-hud"><div id="timer">Time: 0.00</div><div id="deathsCounter">Deaths: 0</div></div>
             <div id="sprintStatus">Sprint Ready</div>
         </div>
         <div id="levelStartBanner" class="screen" style="display: none; background-color: rgba(0,0,0,0.5);"><h1 id="levelBannerText">Level 1</h1></div>
-    </div> <!-- End of gameContainer -->
+    </div>
 
-
-    <!-- SCRIPT ORDER IS IMPORTANT! -->
-    
-    <!-- ADD THESE TWO FIREBASE SCRIPT TAGS -->
-    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
-
-    <!-- Your existing scripts go below -->
     <script src="levels.js"></script>
     <script src="game.js"></script>
 </body>
