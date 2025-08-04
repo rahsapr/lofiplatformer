@@ -1,5 +1,32 @@
 // --- Setup and DOM Elements ---
-const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d'), startScreen = document.getElementById('startScreen'), intermissionScreen = document.getElementById('intermissionScreen'), gameCompleteScreen = document.getElementById('gameCompleteScreen'), leaderboardScreen = document.getElementById('leaderboardScreen'), deathScreen = document.getElementById('deathScreen'), pauseScreen = document.getElementById('pauseScreen'), powerupScreen = document.getElementById('powerupScreen'), gameUI = document.getElementById('gameUI'), startButton = document.getElementById('startButton'), leaderboardButton = document.getElementById('leaderboardButton'), backButton = document.getElementById('backButton'), submitScoreButton = document.getElementById('submitScoreButton'), replayButton = document.getElementById('replayButton'), homeButton = document.getElementById('homeButton'), nextLevelButton = document.getElementById('nextLevelButton'), restartFromDeathButton = document.getElementById('restartFromDeathButton'), homeFromDeathButton = document.getElementById('homeFromDeathButton'), resumeButton = document.getElementById('resumeButton'), pauseRestartButton = document.getElementById('pauseRestartButton'), pauseHomeButton = document.getElementById('pauseHomeButton'), continueButton = document.getElementById('continueButton'), nameInput = document.getElementById('nameInput'), bestTimeEl = document.getElementById('bestTime'), finalTimeStat = document.getElementById('finalTimeStat'), finalDeathsStat = document.getElementById('finalDeathsStat'), leaderboardListEl = document.getElementById('leaderboardList'), timerEl = document.getElementById('timer'), deathsCounter = document.getElementById('deathsCounter'), sprintStatusEl = document.getElementById('sprintStatus'), levelStartBanner = document.getElementById('levelStartBanner'), levelBannerText = document.getElementById('levelBannerText'), deathOptions = document.getElementById('deathOptions'), pauseLevelStat = document.getElementById('pauseLevelStat'), pauseTimeStat = document.getElementById('pauseTimeStat'), pauseDeathsStat = document.getElementById('pauseDeathsStat'), musicVolumeSlider = document.getElementById('musicVolumeSlider'), sfxVolumeSlider = document.getElementById('sfxVolumeSlider'), masterMuteCheckbox = document.getElementById('masterMuteCheckbox'), powerupNotification = document.getElementById('powerupNotification'), powerupMessage = document.getElementById('powerupMessage');
+const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d'), startScreen = document.getElementById('startScreen'), intermissionScreen = document.getElementById('intermissionScreen'), gameCompleteScreen = document.getElementById('gameCompleteScreen'), leaderboardScreen = document.getElementById('leaderboardScreen'), deathScreen = document.getElementById('deathScreen'), pauseScreen = document.getElementById('pauseScreen'), powerupScreen = document.getElementById('powerupScreen'), gameUI = document.getElementById('gameUI'), startButton = document.getElementById('startButton'), leaderboardButton = document.getElementById('leaderboardButton'), backButton = document.getElementById('backButton'), submitScoreButton = document.getElementById('submitScoreButton'), replayButton = document.getElementById('replayButton'), homeButton = document.getElementById('homeButton'), nextLevelButton = document.getElementById('nextLevelButton'), restartFromDeathButton = document.getElementById('restartFromDeathButton'), homeFromDeathButton = document.getElementById('homeFromDeathButton'), resumeButton = document.getElementById('resumeButton'), pauseRestartButton = document.getElementById('pauseRestartButton'), pauseHomeButton = document.getElementById('pauseHomeButton'), continueButton = document.getElementById('continueButton'), nameInput = document.getElementById('nameInput'), bestTimeEl = document.getElementById('bestTime'), finalTimeStat = document.getElementById('finalTimeStat'), finalDeathsStat = document.getElementById('finalDeathsStat'), leaderboardListEl = document.getElementById('leaderboardList'), timerEl = document.getElementById('timer'), deathsCounter = document.getElementById('deathsCounter'), sprintStatusEl = document.getElementById('sprintStatus'), levelStartBanner = document.getElementById('levelStartBanner'), levelBannerText = document.getElementById('levelBannerText'), deathOptions = document.getElementById('deathOptions'), pauseLevelStat = document.getElementById('pauseLevelStat'), pauseTimeStat = document.getElementById('pauseTimeStat'), pauseDeathsStat = document.getElementById('pauseDeathsStat'), musicVolumeSlider = document.getElementById('musicVolumeSlider'), sfxVolumeSlider = document.getElementById('sfxVolumeSlider'), masterMuteCheckbox = document.getElementById('masterMuteCheckbox'), powerupNotification = document.getElementById('powerupNotification'), powerupMessage = document.getElementById('powerupMessage'), loadingScreen = document.getElementById('loadingScreen');
+
+// --- Asset Loading ---
+const sprites = {};
+const spritePaths = {
+    idle: 'assets/sprites/adventurer_idle.png',
+    jump: 'assets/sprites/adventurer_jump.png',
+    skid: 'assets/sprites/adventurer_skid.png',
+    walk1: 'assets/sprites/adventurer_walk1.png',
+    walk2: 'assets/sprites/adventurer_walk2.png',
+    hold1: 'assets/sprites/adventurer_hold1.png',
+    hold2: 'assets/sprites/adventurer_hold2.png'
+};
+
+function loadAssets() {
+    const promises = Object.entries(spritePaths).map(([key, path]) => {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => {
+                sprites[key] = img;
+                resolve();
+            };
+            img.onerror = reject;
+            img.src = path;
+        });
+    });
+    return Promise.all(promises);
+}
 
 // --- Audio & Settings ---
 const backgroundMusic = new Audio('assets/background.mp3'); backgroundMusic.loop = true; const gameOverMusic = new Audio('assets/gameover.mp3'); gameOverMusic.loop = false;
@@ -11,6 +38,7 @@ const WIDTH = 1024, HEIGHT = 768; canvas.width = WIDTH; canvas.height = HEIGHT;
 const PLAYER_ACC = 0.6, PLAYER_SPRINT_ACC = 1.2, PLAYER_FRICTION = -0.12, PLAYER_GRAVITY = 0.8, PLAYER_JUMP_STRENGTH = -18, PLAYER_SPRINT_JUMP_STRENGTH = -22, PLAYER_SPRINT_DURATION = 250, PLAYER_SPRINT_COOLDOWN = 1000;
 const PLAYER_DASH_SPEED = 15, PLAYER_DASH_DURATION = 150;
 const UI_UPDATE_INTERVAL = 100;
+const ANIMATION_SPEED = 150;
 
 // --- Game State & Classes ---
 let keys = {}, player, platforms, pushableBlocks, hazards, goal, camera = { x: 0, y: 0 },
@@ -21,8 +49,36 @@ let currentFocusIndex = 0;
 let currentLevelWidth = 0, currentLevelHeight = 0;
 
 function isColliding(rect1, rect2) { return rect1.x < rect2.x + rect2.width && rect1.x + rect1.width > rect2.x && rect1.y < rect2.y + rect2.height && rect1.y + rect1.height > rect2.y; }
-class Player { constructor(x, y) { this.width = TILE_SIZE - 8; this.height = TILE_SIZE * 1.5; this.pos = { x, y }; this.vel = { x: 0, y: 0 }; this.jumpsLeft = 2; this.onGround = false; this.canDashInAir = true; this.isDashing = false; this.dashTimer = 0; this.isSprinting = false; this.sprintTimer = 0; this.sprintCooldownTimer = 0; } jump() { if (this.jumpsLeft > 0) { if (this.onGround && this.isSprinting) { this.vel.y = PLAYER_SPRINT_JUMP_STRENGTH; } else { this.vel.y = PLAYER_JUMP_STRENGTH; } this.jumpsLeft--; this.onGround = false; } } sprint() { if (this.onGround && performance.now() > this.sprintCooldownTimer) { this.isSprinting = true; this.sprintTimer = performance.now(); } } respawn(startPos) { this.pos.x = startPos.x; this.pos.y = startPos.y; this.vel = { x: 0, y: 0 }; this.onGround = false; this.isSprinting = false; this.isDashing = false; this.canDashInAir = true; } dash() { if (unlockedPowers.canDash && this.canDashInAir && !this.onGround) { this.isDashing = true; this.canDashInAir = false; this.dashTimer = performance.now(); const direction = (keys['arrowleft']) ? -1 : (keys['arrowright']) ? 1 : (this.vel.x !== 0 ? Math.sign(this.vel.x) : 1); this.vel.x = direction * PLAYER_DASH_SPEED; this.vel.y = 0; } } 
+
+class Player {
+    constructor(x, y) {
+        this.width = TILE_SIZE * 0.8;
+        this.height = TILE_SIZE * 1.4;
+        this.pos = { x, y };
+        this.vel = { x: 0, y: 0 };
+        this.jumpsLeft = 2;
+        this.onGround = false;
+        this.facingRight = true;
+        this.isPushing = false;
+        this.animationTimer = 0;
+        this.animationFrame = 0;
+        this.canDashInAir = true;
+        this.isDashing = false;
+        this.dashTimer = 0;
+        this.isSprinting = false;
+        this.sprintTimer = 0;
+        this.sprintCooldownTimer = 0;
+    }
+    jump() { if (this.jumpsLeft > 0) { if (this.onGround && this.isSprinting) { this.vel.y = PLAYER_SPRINT_JUMP_STRENGTH; } else { this.vel.y = PLAYER_JUMP_STRENGTH; } this.jumpsLeft--; this.onGround = false; } }
+    sprint() { if (this.onGround && performance.now() > this.sprintCooldownTimer) { this.isSprinting = true; this.sprintTimer = performance.now(); } }
+    respawn(startPos) { this.pos.x = startPos.x; this.pos.y = startPos.y; this.vel = { x: 0, y: 0 }; this.onGround = false; this.isSprinting = false; this.isDashing = false; this.canDashInAir = true; }
+    dash() { if (unlockedPowers.canDash && this.canDashInAir && !this.onGround) { this.isDashing = true; this.canDashInAir = false; this.dashTimer = performance.now(); const direction = (keys['arrowleft']) ? -1 : (keys['arrowright']) ? 1 : (this.vel.x !== 0 ? Math.sign(this.vel.x) : 1); this.vel.x = direction * PLAYER_DASH_SPEED; this.vel.y = 0; } }
     update(platforms, pushableBlocks) {
+        if (this.vel.x > 0.1) { this.facingRight = true; } else if (this.vel.x < -0.1) { this.facingRight = false; }
+        this.animationTimer += 1000 / 60;
+        if (this.animationTimer > ANIMATION_SPEED) { this.animationTimer = 0; this.animationFrame = (this.animationFrame + 1) % 2; }
+        this.isPushing = false;
+        
         if (this.isDashing) {
             this.vel.y = 0;
             if (performance.now() - this.dashTimer > PLAYER_DASH_DURATION) {
@@ -39,6 +95,7 @@ class Player { constructor(x, y) { this.width = TILE_SIZE - 8; this.height = TIL
                 return;
             }
         }
+        
         let accX = 0; const moveForce = (this.isSprinting && this.onGround) ? PLAYER_SPRINT_ACC : PLAYER_ACC;
         if (keys['arrowleft']) accX = -moveForce; if (keys['arrowright']) accX = moveForce;
         if (this.isSprinting && performance.now() - this.sprintTimer > PLAYER_SPRINT_DURATION) { this.isSprinting = false; this.sprintCooldownTimer = performance.now() + PLAYER_SPRINT_COOLDOWN; }
@@ -47,30 +104,42 @@ class Player { constructor(x, y) { this.width = TILE_SIZE - 8; this.height = TIL
         if (this.vel.y > TILE_SIZE) this.vel.y = TILE_SIZE;
         const maxSpeed = (this.isSprinting && this.onGround) ? 12 : 7;
         if (Math.abs(this.vel.x) > maxSpeed) { this.vel.x = Math.sign(this.vel.x) * maxSpeed; }
-        
         const allObstacles = [...platforms, ...pushableBlocks];
         this.pos.y += this.vel.y;
         let playerRect = { x: this.pos.x, y: this.pos.y, width: this.width, height: this.height };
         this.onGround = false;
         for (const p of allObstacles) { if (isColliding(playerRect, p)) { if (this.vel.y > 0) { this.pos.y = p.y - this.height; this.vel.y = 0; this.onGround = true; this.jumpsLeft = 2; this.canDashInAir = true; } else if (this.vel.y < 0) { this.pos.y = p.y + p.height; this.vel.y = 0; } } }
-        
         this.pos.x += this.vel.x;
         playerRect = { x: this.pos.x, y: this.pos.y, width: this.width, height: this.height };
         for (const p of allObstacles) {
             if (isColliding(playerRect, p)) {
                 if (p instanceof PushableBlock && unlockedPowers.canPush) {
-                    if (p.push(this.vel.x, allObstacles)) {
-                        this.pos.x = (this.vel.x > 0) ? p.x - this.width : p.x + p.width;
-                    } else {
-                        this.pos.x = (this.vel.x > 0) ? p.x - this.width : p.x + p.width; this.vel.x = 0;
-                    }
+                    this.isPushing = true;
+                    if (p.push(this.vel.x, allObstacles)) { this.pos.x = (this.vel.x > 0) ? p.x - this.width : p.x + p.width; }
+                    else { this.pos.x = (this.vel.x > 0) ? p.x - this.width : p.x + p.width; this.vel.x = 0; }
                 } else {
                     this.pos.x = (this.vel.x > 0) ? p.x - this.width : p.x + p.width; this.vel.x = 0;
                 }
             }
         }
     }
-    draw(ctx) { ctx.fillStyle = '#ff7847'; ctx.fillRect(this.pos.x, this.pos.y, this.width, this.height); }
+    draw(ctx) {
+        let imageToDraw;
+        if (this.isDashing) { imageToDraw = sprites.skid; }
+        else if (!this.onGround) { imageToDraw = sprites.jump; }
+        else if (this.isPushing) { imageToDraw = this.animationFrame === 0 ? sprites.hold1 : sprites.hold2; }
+        else if (Math.abs(this.vel.x) > 0.1) { imageToDraw = this.animationFrame === 0 ? sprites.walk1 : sprites.walk2; }
+        else { imageToDraw = sprites.idle; }
+        ctx.save();
+        if (!this.facingRight) {
+            ctx.translate(this.pos.x + this.width, this.pos.y);
+            ctx.scale(-1, 1);
+            ctx.drawImage(imageToDraw, 0, 0, this.width, this.height);
+        } else {
+            ctx.drawImage(imageToDraw, this.pos.x, this.pos.y, this.width, this.height);
+        }
+        ctx.restore();
+    }
 }
 class Platform { constructor(x, y) { this.x = x; this.y = y; this.width = TILE_SIZE; this.height = TILE_SIZE; } draw(ctx) { const grassHeight = 8; ctx.fillStyle = '#32cd32'; ctx.fillRect(this.x, this.y, this.width, grassHeight); ctx.fillStyle = '#8b4513'; ctx.fillRect(this.x, this.y + grassHeight, this.width, this.height - grassHeight); } }
 class Hazard { constructor(x,y) { this.x = x; this.y = y + TILE_SIZE / 2; this.width = TILE_SIZE; this.height = TILE_SIZE / 2; } draw(ctx) { ctx.fillStyle = '#ff0000'; ctx.fillRect(this.x, this.y, this.width, this.height); } }
@@ -79,7 +148,7 @@ class PushableBlock { constructor(x, y) { this.x = x; this.y = y; this.width = T
 
 // --- Game Logic ---
 let gameStartPos = { x: 0, y: 0 };
-function initLevel(levelIndex) { platforms = []; pushableBlocks = []; hazards = []; let foundStart = false; const levelMap = LEVEL_MAPS[levelIndex]; currentLevelHeight = levelMap.length * TILE_SIZE; currentLevelWidth = levelMap[0].length * TILE_SIZE; levelMap.forEach((row, rowIndex) => { for (let colIndex = 0; colIndex < row.length; colIndex++) { const tile = row[colIndex]; const x = colIndex * TILE_SIZE; const y = rowIndex * TILE_SIZE; if (tile === 'P') { platforms.push(new Platform(x, y)); if (levelMap[rowIndex-1] && levelMap[rowIndex-1][colIndex] === 'S' && !foundStart) { gameStartPos = { x: x + (TILE_SIZE / 2) - ((TILE_SIZE-8)/2), y: y - (TILE_SIZE * 1.5) }; foundStart = true; } } else if (tile === 'B') { pushableBlocks.push(new PushableBlock(x,y)); } else if (tile === 'H') { hazards.push(new Hazard(x, y)); } else if (tile === 'E') { goal = new Goal(x, y); } } }); player = new Player(gameStartPos.x, gameStartPos.y); }
+function initLevel(levelIndex) { platforms = []; pushableBlocks = []; hazards = []; let foundStart = false; const levelMap = LEVEL_MAPS[levelIndex]; currentLevelHeight = levelMap.length * TILE_SIZE; currentLevelWidth = levelMap[0].length * TILE_SIZE; levelMap.forEach((row, rowIndex) => { for (let colIndex = 0; colIndex < row.length; colIndex++) { const tile = row[colIndex]; const x = colIndex * TILE_SIZE; const y = rowIndex * TILE_SIZE; if (tile === 'P') { platforms.push(new Platform(x, y)); if (levelMap[rowIndex-1] && levelMap[rowIndex-1][colIndex] === 'S' && !foundStart) { gameStartPos = { x: x + (TILE_SIZE / 2) - ((TILE_SIZE*0.8)/2), y: y - (TILE_SIZE * 1.4) }; foundStart = true; } } else if (tile === 'B') { pushableBlocks.push(new PushableBlock(x,y)); } else if (tile === 'H') { hazards.push(new Hazard(x, y)); } else if (tile === 'E') { goal = new Goal(x, y); } } }); player = new Player(gameStartPos.x, gameStartPos.y); }
 function triggerDeathSequence() { if (gameState !== 'PLAYING') return; gameState = 'DEATH_SCREEN'; stateChangeTimestamp = performance.now(); totalDeaths++; backgroundMusic.pause(); gameOverMusic.currentTime = 0; gameOverMusic.play().catch(e => console.error("Game over audio failed:", e)); switchScreen(deathScreen); deathOptions.style.visibility = 'hidden'; }
 function checkOtherCollisions() { const playerRect = { x: player.pos.x, y: player.pos.y, width: player.width, height: player.height }; for(const h of hazards) { if (isColliding(playerRect, h)) { triggerDeathSequence(); return; } } if (goal && isColliding(playerRect, goal)) { completeLevel(); return; } if (player.pos.y > currentLevelHeight + 200) { triggerDeathSequence(); } }
 function update() { if (gameState !== 'PLAYING') return; player.update(platforms, pushableBlocks); checkOtherCollisions(); const targetCamX = player.pos.x + player.width / 2 - WIDTH / 2; const targetCamY = player.pos.y + player.height / 2 - HEIGHT / 2; camera.x += (targetCamX - camera.x) * 0.08; camera.y += (targetCamY - camera.y) * 0.08; if (camera.x < 0) camera.x = 0; if (camera.x > currentLevelWidth - WIDTH) camera.x = currentLevelWidth - WIDTH; if (camera.y < 0) camera.y = 0; if (camera.y > currentLevelHeight - HEIGHT) camera.y = currentLevelHeight - HEIGHT; const now = performance.now(); if (now - lastUiUpdateTime > UI_UPDATE_INTERVAL) { lastUiUpdateTime = now; const elapsedTime = (now - levelStartTime) / 1000; timerEl.textContent = `Time: ${elapsedTime.toFixed(2)}`; deathsCounter.textContent = `Deaths: ${totalDeaths}`; if (player.isSprinting) { sprintStatusEl.textContent = 'SPRINT!'; sprintStatusEl.style.color = '#ff7847'; } else if (now < player.sprintCooldownTimer) { sprintStatusEl.textContent = 'Cooldown'; sprintStatusEl.style.color = 'black'; } else { sprintStatusEl.textContent = 'Sprint Ready'; sprintStatusEl.style.color = 'green'; } } }
@@ -125,6 +194,14 @@ pauseHomeButton.addEventListener('click', showStartScreen);
 continueButton.addEventListener('click', () => { const isLastLevel = currentLevelIndex >= LEVEL_MAPS.length - 1; if (isLastLevel) { showGameCompleteScreen(); } else { showIntermissionScreen(); } });
 
 // --- Initial Call ---
-loadSettings();
-loadProgress();
-showStartScreen();
+loadAssets().then(() => {
+    console.log("All assets loaded successfully!");
+    loadingScreen.style.display = 'none';
+    startButton.disabled = false;
+    loadSettings();
+    loadProgress();
+    showStartScreen();
+}).catch(error => {
+    console.error("Error loading assets:", error);
+    loadingScreen.innerHTML = "<h1>Error loading assets. Please refresh.</h1>";
+});

@@ -11,13 +11,17 @@
     <div id="gameContainer">
         <canvas id="gameCanvas"></canvas>
 
-        <!-- UI Screens -->
-        <div id="startScreen" class="screen">
+        <!-- NEW: Loading Screen -->
+        <div id="loadingScreen" class="screen">
+            <h1>Loading...</h1>
+        </div>
+
+        <div id="startScreen" class="screen" style="display: none;">
             <h1>Flowy Jumper</h1>
             <h2 id="bestTime">Best Time: ---</h2>
             <p>Controls: Arrow Keys to Move, Arrow Up to Jump</p>
             <p>SHIFT to Sprint, X to Dash</p>
-            <button id="startButton" class="focusable">Start Game</button>
+            <button id="startButton" class="focusable" disabled>Start Game</button>
             <button id="leaderboardButton" class="focusable">View Leaderboard</button>
             
             <div id="settingsPanel">
@@ -30,6 +34,10 @@
 
         <div id="intermissionScreen" class="screen" style="display: none;">
             <h1>Level Complete!</h1>
+            <div id="powerupNotification" style="display: none;">
+                <h2>POWER-UP UNLOCKED!</h2>
+                <p id="powerupMessage"></p>
+            </div>
             <p>Ready for the next challenge?</p>
             <div class="button-row">
                 <button id="nextLevelButton" class="focusable">Next Level</button>
@@ -85,7 +93,6 @@
             <button id="continueButton" class="focusable">Continue</button>
         </div>
 
-        <!-- In-Game UI -->
         <div id="gameUI" style="display: none;">
             <div class="left-hud"><div id="timer">Time: 0.00</div><div id="deathsCounter">Deaths: 0</div></div>
             <div id="sprintStatus">Sprint Ready</div>
